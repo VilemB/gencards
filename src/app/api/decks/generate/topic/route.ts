@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { NextResponse } from "next/server";
 import { MongoClient, ObjectId } from "mongodb";
 import { getServerSession } from "next-auth";
