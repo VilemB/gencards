@@ -1,4 +1,4 @@
-import pdfParse from "pdf-parse";
+import { Buffer } from "buffer";
 
 export async function extractTextFromDocument(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -6,6 +6,7 @@ export async function extractTextFromDocument(file: File): Promise<string> {
 
   if (file.type === "application/pdf") {
     try {
+      const pdfParse = (await import("pdf-parse")).default;
       const data = await pdfParse(buffer);
       text = data.text;
     } catch (error) {
