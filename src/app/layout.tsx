@@ -8,6 +8,10 @@ export const metadata = {
   title: "GenCards - AI-Powered Flashcards for Smarter Learning",
   description:
     "Create and study flashcards enhanced by artificial intelligence for more effective learning.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
