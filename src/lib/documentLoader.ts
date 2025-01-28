@@ -1,16 +1,5 @@
 import pdfParse from "pdf-parse";
 
-declare module "pdf-parse" {
-  interface PDFData {
-    text: string;
-    numpages: number;
-    info: Record<string, any>;
-  }
-
-  function parse(buffer: Buffer): Promise<PDFData>;
-  export = parse;
-}
-
 export async function extractTextFromDocument(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
   let text = "";
