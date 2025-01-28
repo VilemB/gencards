@@ -9,8 +9,20 @@ export const metadata = {
   description:
     "Create and study flashcards enhanced by artificial intelligence for more effective learning.",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      {
+        url: "/favicon.png",
+        type: "image/png",
+      },
+      {
+        url: "/favicon.png",
+        type: "image/png",
+      },
+    ],
+    apple: {
+      url: "/favicon.png",
+      type: "image/png",
+    },
   },
 };
 
