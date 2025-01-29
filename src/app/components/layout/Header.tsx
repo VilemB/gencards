@@ -13,7 +13,6 @@ import {
   User,
   LogOut,
 } from "lucide-react";
-import Image from "next/image";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -33,13 +32,8 @@ export default function Header() {
             <div className="flex h-16 justify-between">
               <div className="flex">
                 <div className="flex flex-shrink-0 items-center">
-                  <Link href="/" className="text-2xl font-bold text-indigo-600">
-                    <Image
-                      src="/logo-text.png"
-                      alt="GenCards"
-                      width={100}
-                      height={50}
-                    />
+                  <Link href="/">
+                    <img src="/logo-text.png" alt="GenCards" width={100} />
                   </Link>
                 </div>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
