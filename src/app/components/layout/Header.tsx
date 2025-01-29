@@ -3,13 +3,22 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  Menu as MenuIcon,
+  X,
+  Home,
+  Library,
+  Plus,
+  Users,
+  User,
+  LogOut,
+} from "lucide-react";
 
 const navigation = [
-  { name: "Home", href: "/" },
-  { name: "My Decks", href: "/decks" },
-  { name: "Create", href: "/create" },
-  { name: "Community", href: "/community" },
+  { name: "Home", href: "/", icon: Home },
+  { name: "My Decks", href: "/decks", icon: Library },
+  { name: "Create", href: "/create", icon: Plus },
+  { name: "Community", href: "/community", icon: Users },
 ];
 
 export default function Header() {
@@ -32,8 +41,9 @@ export default function Header() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-indigo-600"
+                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-indigo-600 gap-1"
                     >
+                      <item.icon className="h-4 w-4" />
                       {item.name}
                     </Link>
                   ))}
@@ -60,16 +70,18 @@ export default function Header() {
                         <Menu.Item>
                           <Link
                             href="/profile"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
+                            <User className="h-4 w-4" />
                             Your Profile
                           </Link>
                         </Menu.Item>
                         <Menu.Item>
                           <button
                             onClick={() => signOut()}
-                            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                           >
+                            <LogOut className="h-4 w-4" />
                             Sign out
                           </button>
                         </Menu.Item>
@@ -97,9 +109,9 @@ export default function Header() {
                 <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
-                    <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+                    <X className="block h-6 w-6" aria-hidden="true" />
                   ) : (
-                    <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+                    <MenuIcon className="block h-6 w-6" aria-hidden="true" />
                   )}
                 </Disclosure.Button>
               </div>
@@ -113,8 +125,9 @@ export default function Header() {
                   key={item.name}
                   as={Link}
                   href={item.href}
-                  className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-700"
+                  className="flex items-center gap-2 border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-700"
                 >
+                  <item.icon className="h-4 w-4" />
                   {item.name}
                 </Disclosure.Button>
               ))}
