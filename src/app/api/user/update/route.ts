@@ -23,8 +23,8 @@ export async function PUT(req: Request) {
 
     await connectToDatabase();
 
-    const user = await User.findByIdAndUpdate(
-      session.user.id,
+    const user = await User.findOneAndUpdate(
+      { email: session.user.email },
       { name },
       { new: true, runValidators: true }
     );

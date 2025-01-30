@@ -60,29 +60,34 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google") {
         await connectToDatabase();
 
-        // Check if user exists
-        const existingUser = await User.findOne({ email: user.email });
+        // Check if user exists by email
+        let dbUser = await User.findOne({ email: user.email });
 
-        if (!existingUser) {
+        if (!dbUser) {
           // Create new user from Google data
-          await User.create({
+          dbUser = await User.create({
             name: user.name,
             email: user.email,
             image: user.image,
             emailVerified: new Date(),
           });
         }
+
+        // Update the user object with MongoDB _id
+        user.id = dbUser._id.toString();
       }
       return true;
     },
     async session({ session, token }) {
-      if (token.sub && session.user) {
-        session.user.id = token.sub;
+      if (session.user) {
+        // Use the token's sub (which contains MongoDB _id) for the session user id
+        session.user.id = token.sub!;
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
+        // Store MongoDB _id in the token's sub field
         token.sub = user.id;
       }
       return token;
