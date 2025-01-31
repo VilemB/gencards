@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { User, Shield, AlertCircle } from "lucide-react";
 
 export default function ProfilePage() {
   const { data: session, update: updateSession } = useSession();
@@ -75,22 +76,12 @@ export default function ProfilePage() {
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-[var(--background)] py-12">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[var(--background)] py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-8">
+          {/* Profile Header */}
           <div className="card">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="heading-2">Profile</h1>
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="btn-secondary"
-                disabled={loading}
-              >
-                {isEditing ? "Cancel" : "Edit Profile"}
-              </button>
-            </div>
-
-            <div className="flex items-center space-x-6 mb-8">
+            <div className="flex items-center space-x-8">
               {session.user.image ? (
                 <Image
                   src={session.user.image}
@@ -106,7 +97,7 @@ export default function ProfilePage() {
                   </span>
                 </div>
               )}
-              <div>
+              <div className="flex-1">
                 {isEditing ? (
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -129,17 +120,35 @@ export default function ProfilePage() {
                     {error && (
                       <p className="text-[var(--error)] text-sm">{error}</p>
                     )}
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                      disabled={loading}
-                    >
-                      {loading ? "Saving..." : "Save Changes"}
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={loading}
+                      >
+                        {loading ? "Saving..." : "Save Changes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(false)}
+                        className="btn-secondary"
+                        disabled={loading}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </form>
                 ) : (
                   <div className="space-y-2">
-                    <h2 className="heading-3">{session.user.name}</h2>
+                    <div className="flex items-center justify-between">
+                      <h1 className="heading-2">{session.user.name}</h1>
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="btn-secondary"
+                      >
+                        Edit Profile
+                      </button>
+                    </div>
                     <p className="text-[var(--text-secondary)]">
                       {session.user.email}
                     </p>
@@ -147,44 +156,51 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
+          </div>
 
-            <div className="border-t border-[var(--neutral-200)] pt-6">
-              <h3 className="heading-4 mb-4">Account Information</h3>
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Account Details */}
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            <div className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <User className="h-5 w-5 text-[var(--primary)]" />
+                <h2 className="heading-3">Personal Information</h2>
+              </div>
+              <dl className="space-y-4">
                 <div>
                   <dt className="text-sm font-medium text-[var(--text-secondary)]">
-                    Email
+                    Full Name
+                  </dt>
+                  <dd className="mt-1 text-[var(--text-primary)]">
+                    {session.user.name}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-[var(--text-secondary)]">
+                    Email Address
                   </dt>
                   <dd className="mt-1 text-[var(--text-primary)]">
                     {session.user.email}
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-sm font-medium text-[var(--text-secondary)]">
-                    Account ID
-                  </dt>
-                  <dd className="mt-1 text-[var(--text-primary)]">
-                    {session.user.id}
-                  </dd>
-                </div>
               </dl>
             </div>
 
-            <div className="border-t border-[var(--neutral-200)] mt-8 pt-8">
-              <h3 className="heading-4 text-[var(--error)] mb-4">
-                Danger Zone
-              </h3>
-              <p className="text-[var(--text-secondary)] mb-4">
-                Once you delete your account, there is no going back. Please be
-                certain.
+            <div className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <Shield className="h-5 w-5 text-[var(--primary)]" />
+                <h2 className="heading-3">Account Management</h2>
+              </div>
+              <p className="text-[var(--text-secondary)] mb-6">
+                Manage your account settings and preferences
               </p>
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="btn bg-[var(--error)] text-white hover:bg-[var(--error)] hover:opacity-90"
-                disabled={loading}
-              >
-                Delete Account
-              </button>
+              <div className="space-y-4">
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="btn-secondary w-full justify-center"
+                >
+                  Close Account
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -194,12 +210,13 @@ export default function ProfilePage() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="heading-3 text-[var(--error)] mb-4">
-              Delete Account
-            </h2>
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className="h-5 w-5 text-[var(--text-secondary)]" />
+              <h2 className="heading-3">Close Account</h2>
+            </div>
             <p className="text-[var(--text-secondary)] mb-6">
-              Are you sure you want to delete your account? This action cannot
-              be undone.
+              Are you sure you want to close your account? All your data will be
+              permanently removed. This action cannot be undone.
             </p>
             {error && (
               <p className="text-[var(--error)] text-sm mb-4">{error}</p>
@@ -207,22 +224,22 @@ export default function ProfilePage() {
             <div className="flex space-x-4">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="btn-secondary flex-1"
+                className="btn-primary flex-1"
                 disabled={loading}
               >
-                Cancel
+                Keep Account
               </button>
               <button
                 onClick={handleDeleteAccount}
-                className="btn bg-[var(--error)] text-white hover:bg-[var(--error)] hover:opacity-90 flex-1"
+                className="btn-secondary flex-1"
                 disabled={loading}
               >
-                {loading ? "Deleting..." : "Yes, Delete Account"}
+                {loading ? "Closing..." : "Close Account"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
