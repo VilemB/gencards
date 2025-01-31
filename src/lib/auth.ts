@@ -1,12 +1,9 @@
 import "dotenv/config";
-import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { AuthOptions } from "next-auth";
-import { Adapter } from "next-auth/adapters";
 import mongoose from "mongoose";
 
 interface UserData {
@@ -130,3 +127,28 @@ export const authOptions: AuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
+export async function deleteUser(userId: string): Promise<boolean> {
+  try {
+    await connectToDatabase();
+
+    // Delete user's flashcards first
+    await mongoose.connection.collection("flashcards").deleteMany({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    // Delete the user
+    const result = await mongoose.connection.collection("users").deleteOne({
+      _id: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (result.deletedCount === 0) {
+      throw new Error("User not found");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in deleteUser:", error);
+    throw error;
+  }
+}

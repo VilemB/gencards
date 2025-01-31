@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Disclosure, Menu, Transition } from "@headlessui/react";
+import { Disclosure } from "@headlessui/react";
 import {
   Menu as MenuIcon,
   X,
@@ -10,10 +10,11 @@ import {
   Library,
   Plus,
   Users,
-  User,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // Public navigation items
 const publicNavigation = [
@@ -78,51 +79,34 @@ export default function Header() {
               </div>
               <div className="hidden sm:flex sm:items-center sm:gap-2">
                 {session ? (
-                  <Menu as="div" className="relative">
-                    <Menu.Button className="flex items-center gap-3 rounded-lg bg-[var(--primary-light)] px-3 py-2 text-sm font-medium text-[var(--primary)] hover:bg-[var(--primary-light)]/80 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2">
-                      <div className="h-7 w-7 rounded-md bg-[var(--primary)] flex items-center justify-center text-white font-medium">
-                        {session.user?.name?.[0] || "U"}
-                      </div>
-                      <span>{session.user?.name?.split(" ")[0]}</span>
-                    </Menu.Button>
-                    <Transition
-                      enter="transition ease-out duration-200"
-                      enterFrom="transform opacity-0 scale-95"
-                      enterTo="transform opacity-100 scale-100"
-                      leave="transition ease-in duration-75"
-                      leaveFrom="transform opacity-100 scale-100"
-                      leaveTo="transform opacity-0 scale-95"
+                  <>
+                    <Button
+                      variant="ghost"
+                      asChild
+                      className="gap-2 hidden md:flex"
                     >
-                      <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-[var(--neutral-200)] focus:outline-none">
-                        <Menu.Item>
-                          <Link
-                            href="/profile"
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--neutral-100)] hover:text-[var(--text-primary)]"
-                          >
-                            <User className="h-4 w-4" />
-                            Your Profile
-                          </Link>
-                        </Menu.Item>
-                        <Menu.Item>
-                          <button
-                            onClick={() => signOut()}
-                            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-[var(--error)] hover:bg-red-50"
-                          >
-                            <LogOut className="h-4 w-4" />
-                            Sign out
-                          </button>
-                        </Menu.Item>
-                      </Menu.Items>
-                    </Transition>
-                  </Menu>
+                      <Link href="/settings">
+                        <Settings className="h-5 w-5" />
+                        Settings
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => signOut()}
+                      className="gap-2"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Sign Out
+                    </Button>
+                  </>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <Link href="/auth/signin" className="btn-primary">
-                      Sign in
-                    </Link>
-                    <Link href="/auth/signup" className="btn-secondary">
-                      Sign up
-                    </Link>
+                    <Button asChild>
+                      <Link href="/auth/signin">Sign in</Link>
+                    </Button>
+                    <Button variant="secondary" asChild>
+                      <Link href="/auth/signup">Sign up</Link>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -161,18 +145,12 @@ export default function Header() {
             {!session && (
               <div className="border-t border-[var(--neutral-200)] px-4 py-4">
                 <div className="flex flex-col gap-2">
-                  <Link
-                    href="/auth/signin"
-                    className="btn-primary w-full justify-center"
-                  >
-                    Sign in
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    className="btn-secondary w-full justify-center"
-                  >
-                    Sign up
-                  </Link>
+                  <Button asChild>
+                    <Link href="/auth/signin">Sign in</Link>
+                  </Button>
+                  <Button variant="secondary" asChild>
+                    <Link href="/auth/signup">Sign up</Link>
+                  </Button>
                 </div>
               </div>
             )}
