@@ -3,6 +3,14 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  // Skip auth check for authentication-related paths
+  if (
+    request.nextUrl.pathname.startsWith("/api/auth") ||
+    request.nextUrl.pathname.startsWith("/auth/error")
+  ) {
+    return NextResponse.next();
+  }
+
   const token = await getToken({ req: request });
   const isAuthenticated = !!token;
 
