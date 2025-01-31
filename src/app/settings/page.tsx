@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Settings, Loader2, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface SettingsForm {
   name: string;
@@ -14,12 +15,22 @@ export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [form, setForm] = useState<SettingsForm>({
-    name: session?.user?.name || "",
-    email: session?.user?.email || "",
+    name: "",
+    email: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    if (session?.user) {
+      setForm({
+        name: session.user.name || "",
+        email: session.user.email || "",
+      });
+    } else if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [session, status, router]);
 
   if (status === "loading") {
     return (
@@ -30,7 +41,6 @@ export default function SettingsPage() {
   }
 
   if (!session) {
-    router.push("/auth/signin");
     return null;
   }
 
@@ -40,13 +50,17 @@ export default function SettingsPage() {
     setError("");
 
     try {
-      const response = await fetch(`/api/user/${session.user.id}/update`, {
+      const userId = await Promise.resolve(session.user.id);
+      const response = await fetch(`/api/user/${userId}/update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: form.name }),
       });
 
-      if (!response.ok) throw new Error("Failed to update settings");
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to update settings");
+      }
 
       // Refresh the session to update the displayed name
       router.refresh();
@@ -55,24 +69,6 @@ export default function SettingsPage() {
         err instanceof Error ? err.message : "Failed to update settings"
       );
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(`/api/user/${session.user.id}/delete`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete account");
-
-      router.push("/auth/signin");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete account");
       setIsLoading(false);
     }
   };
@@ -90,10 +86,10 @@ export default function SettingsPage() {
 
           {/* Profile Settings */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-              Profile Settings
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+              Account Settings
             </h2>
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div>
                 <label
                   htmlFor="name"
@@ -110,13 +106,17 @@ export default function SettingsPage() {
                   disabled={isLoading}
                   required
                 />
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                  This is your public display name.
+                </p>
               </div>
+
               <div>
                 <label
                   htmlFor="email"
                   className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
                 >
-                  Email
+                  Email Address
                 </label>
                 <input
                   type="email"
@@ -126,71 +126,25 @@ export default function SettingsPage() {
                   disabled
                 />
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Email cannot be changed
+                  Your email address is managed through your authentication
+                  provider.
                 </p>
               </div>
+
               {error && (
                 <p className="text-sm text-[var(--error)] flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
                   {error}
                 </p>
               )}
-              <button
-                type="submit"
-                className="btn-primary w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Save Changes"
-                )}
-              </button>
-            </form>
-          </div>
 
-          {/* Danger Zone */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-[var(--error)] mb-4">
-              Danger Zone
-            </h2>
-            {!showDeleteConfirm ? (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="btn-error w-full"
-                disabled={isLoading}
-              >
-                Delete Account
-              </button>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Are you sure you want to delete your account? This action
-                  cannot be undone. All your flashcards and progress will be
-                  permanently deleted.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleDeleteAccount}
-                    className="btn-error flex-1"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Yes, Delete My Account"
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="btn-secondary flex-1"
-                    disabled={isLoading}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Save Changes
+              </Button>
+            </form>
           </div>
         </div>
       </div>
