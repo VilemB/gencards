@@ -15,16 +15,26 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
-const navigation = [
+// Public navigation items
+const publicNavigation = [
   { name: "Home", href: "/", icon: Home },
+  { name: "Community", href: "/community", icon: Users },
+];
+
+// Protected navigation items (only for authenticated users)
+const protectedNavigation = [
+  { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "My Decks", href: "/decks", icon: Library },
-  { name: "Create", href: "/create", icon: Plus },
+  { name: "Create", href: "/decks/create", icon: Plus },
   { name: "Community", href: "/community", icon: Users },
 ];
 
 export default function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
+
+  // Choose navigation items based on auth status
+  const navigation = session ? protectedNavigation : publicNavigation;
 
   return (
     <Disclosure
@@ -37,7 +47,10 @@ export default function Header() {
             <div className="flex h-16 justify-between items-center">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Link href="/" className="block py-2">
+                  <Link
+                    href={session ? "/dashboard" : "/"}
+                    className="block py-2"
+                  >
                     <img
                       src="/logo-text.png"
                       alt="GenCards"

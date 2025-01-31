@@ -7,22 +7,32 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = !!token;
 
   // Public paths that don't require authentication
-  const publicPaths = ["/auth/signin", "/auth/signup"];
+  const publicPaths = ["/", "/auth/signin", "/auth/signup", "/community"];
   const isPublicPath = publicPaths.includes(request.nextUrl.pathname);
 
-  // If the user is on the home page and is authenticated, redirect to dashboard
-  if (request.nextUrl.pathname === "/" && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // Protected paths that require authentication
+  const protectedPaths = [
+    "/dashboard",
+    "/decks",
+    "/profile",
+    "/api/decks",
+    "/api/cards",
+    "/api/user",
+  ];
+  const isProtectedPath = protectedPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  );
 
   // If the user is authenticated and tries to access auth pages, redirect to dashboard
-  if (isAuthenticated && isPublicPath) {
+  if (isAuthenticated && request.nextUrl.pathname.startsWith("/auth")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // If the user is not authenticated and tries to access protected pages, redirect to signin
-  if (!isAuthenticated && !isPublicPath && request.nextUrl.pathname !== "/") {
-    return NextResponse.redirect(new URL("/auth/signin", request.url));
+  // If the user is not authenticated and tries to access protected paths, redirect to signin
+  if (!isAuthenticated && isProtectedPath) {
+    const signInUrl = new URL("/auth/signin", request.url);
+    signInUrl.searchParams.set("callbackUrl", request.url);
+    return NextResponse.redirect(signInUrl);
   }
 
   return NextResponse.next();
@@ -30,5 +40,14 @@ export async function middleware(request: NextRequest) {
 
 // Configure which paths the middleware should run on
 export const config = {
-  matcher: ["/", "/dashboard/:path*", "/profile", "/auth/:path*"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+  ],
 };

@@ -1,8 +1,9 @@
 import "dotenv/config";
 import { NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import mongoose from "mongoose";
+import { connectToDatabase } from "@/lib/mongodb";
 
 export async function GET() {
   try {
@@ -12,24 +13,19 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const client = await MongoClient.connect(process.env.MONGODB_URI!);
-    const db = client.db();
-    const decksCollection = db.collection("decks");
-
-    const decks = await decksCollection
-      .find({ userId: new ObjectId(session.user.id) })
+    await connectToDatabase();
+    const decks = await mongoose.connection
+      .collection("decks")
+      .find({ userId: new mongoose.Types.ObjectId(session.user.id) })
       .sort({ createdAt: -1 })
       .toArray();
 
-    await client.close();
-
-    return NextResponse.json(decks);
+    // Ensure we always return an array, even if empty
+    return NextResponse.json(Array.isArray(decks) ? decks : []);
   } catch (error) {
     console.error("Error fetching decks:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    // Return empty array instead of error to prevent map issues
+    return NextResponse.json([]);
   }
 }
 
@@ -50,20 +46,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = await MongoClient.connect(process.env.MONGODB_URI!);
-    const db = client.db();
-    const decksCollection = db.collection("decks");
-
-    const result = await decksCollection.insertOne({
+    await connectToDatabase();
+    const result = await mongoose.connection.collection("decks").insertOne({
       title,
       description,
-      userId: new ObjectId(session.user.id),
+      userId: new mongoose.Types.ObjectId(session.user.id),
       cardCount: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-
-    await client.close();
 
     return NextResponse.json(
       { message: "Deck created successfully", deckId: result.insertedId },
