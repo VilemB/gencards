@@ -6,6 +6,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { User, Shield, AlertCircle } from "lucide-react";
 
+interface UserData {
+  _id: string;
+  name: string;
+  email: string;
+  image?: string;
+}
+
 export default function ProfilePage() {
   const { data: session, update: updateSession } = useSession();
   const router = useRouter();
@@ -14,16 +21,32 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
+    async function loadUserData() {
+      try {
+        const response = await fetch("/api/user");
+        if (!response.ok) {
+          throw new Error("Failed to load user data");
+        }
+        const user = await response.json();
+        setUserData(user);
+        setName(user.name);
+      } catch (err) {
+        console.error("Error loading user data:", err);
+        setError("Failed to load user data");
+      }
+    }
+
     if (!session) {
       router.push("/auth/signin");
     } else {
-      setName(session.user.name);
+      loadUserData();
     }
   }, [session, router]);
 
-  if (!session) {
+  if (!session || !userData) {
     return null;
   }
 
@@ -45,7 +68,17 @@ export default function ProfilePage() {
         throw new Error("Failed to update profile");
       }
 
+      // Refresh user data from database
+      const updatedUser = await fetch("/api/user");
+      if (!updatedUser.ok) {
+        throw new Error("Failed to refresh user data");
+      }
+      const user = await updatedUser.json();
+      setUserData(user);
+
+      // Update session to maintain consistency
       await updateSession();
+
       setIsEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -82,10 +115,10 @@ export default function ProfilePage() {
           {/* Profile Header */}
           <div className="card">
             <div className="flex items-center space-x-8">
-              {session.user.image ? (
+              {userData.image ? (
                 <Image
-                  src={session.user.image}
-                  alt={session.user.name}
+                  src={userData.image}
+                  alt={userData.name}
                   width={96}
                   height={96}
                   className="rounded-full"
@@ -93,7 +126,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="w-24 h-24 bg-[var(--primary-light)] rounded-full flex items-center justify-center">
                   <span className="text-2xl text-[var(--primary)]">
-                    {session.user.name[0]}
+                    {userData.name[0]}
                   </span>
                 </div>
               )}
@@ -141,7 +174,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <h1 className="heading-2">{session.user.name}</h1>
+                      <h1 className="heading-2">{userData.name}</h1>
                       <button
                         onClick={() => setIsEditing(true)}
                         className="btn-secondary"
@@ -150,7 +183,7 @@ export default function ProfilePage() {
                       </button>
                     </div>
                     <p className="text-[var(--text-secondary)]">
-                      {session.user.email}
+                      {userData.email}
                     </p>
                   </div>
                 )}
@@ -171,7 +204,7 @@ export default function ProfilePage() {
                     Full Name
                   </dt>
                   <dd className="mt-1 text-[var(--text-primary)]">
-                    {session.user.name}
+                    {userData.name}
                   </dd>
                 </div>
                 <div>
@@ -179,7 +212,7 @@ export default function ProfilePage() {
                     Email Address
                   </dt>
                   <dd className="mt-1 text-[var(--text-primary)]">
-                    {session.user.email}
+                    {userData.email}
                   </dd>
                 </div>
               </dl>

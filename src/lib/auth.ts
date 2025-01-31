@@ -2,10 +2,42 @@ import "dotenv/config";
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectToDatabase } from "./mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import { AuthOptions } from "next-auth";
+import { Adapter } from "next-auth/adapters";
+import mongoose from "mongoose";
 
-export const authOptions: NextAuthOptions = {
+interface UserData {
+  _id: string;
+  name: string;
+  email: string;
+  image?: string;
+}
+
+export async function getUserById(userId: string): Promise<UserData | null> {
+  try {
+    await connectToDatabase();
+    const user = await mongoose.connection
+      .collection("users")
+      .findOne({ _id: new mongoose.Types.ObjectId(userId) });
+
+    if (!user) return null;
+
+    return {
+      _id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      image: user.image,
+    };
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    throw error;
+  }
+}
+
+export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
