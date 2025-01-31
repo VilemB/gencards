@@ -8,7 +8,7 @@ export async function GET(
   context: { params: { id: string } }
 ) {
   try {
-    await context.params;
+    await context;
     const [session, userId] = await Promise.all([
       getServerSession(authOptions),
       context.params.id,
