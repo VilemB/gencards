@@ -6,10 +6,6 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
   const isAuthenticated = !!token;
 
-  // Public paths that don't require authentication
-  const publicPaths = ["/", "/auth/signin", "/auth/signup", "/community"];
-  const isPublicPath = publicPaths.includes(request.nextUrl.pathname);
-
   // Protected paths that require authentication
   const protectedPaths = [
     "/dashboard",
