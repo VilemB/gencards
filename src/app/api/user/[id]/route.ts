@@ -4,19 +4,14 @@ import { authOptions } from "@/lib/auth";
 import { getUserById } from "@/lib/auth";
 
 export interface RouteParams {
-  id: string | string[];
+  params: {
+    id: string | Promise<string>;
+  };
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: RouteParams }
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const userId = await Promise.resolve(params.id);
-
-    // Handle array case (should not happen, but TypeScript requires it)
-    const id = Array.isArray(userId) ? userId[0] : userId;
-
+    const id = await params.id;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
