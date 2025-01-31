@@ -3,15 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserById } from "@/lib/auth";
 
-export interface RouteParams {
-  params: {
-    id: string | Promise<string>;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const id = await params.id;
+    const id = await Promise.resolve(params.id);
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
