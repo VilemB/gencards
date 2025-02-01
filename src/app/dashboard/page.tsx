@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Book, Trophy, Clock } from "lucide-react";
+import { Loader2, Plus, Book, Trophy, Flame } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -92,7 +92,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                <Clock className="h-5 w-5 text-[var(--primary)]" />
+                <Flame className="h-5 w-5 text-[var(--primary)]" />
               </div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                 Study Streak

@@ -5,6 +5,44 @@ import { useRouter } from "next/navigation";
 import { Plus, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Predefined topics for decks
+export const DECK_TOPICS = [
+  {
+    id: "languages",
+    name: "Languages",
+    description: "Vocabulary, grammar, and language learning",
+  },
+  {
+    id: "science-math",
+    name: "Science & Math",
+    description: "Physics, chemistry, mathematics",
+  },
+  { id: "biology", name: "Biology", description: "Anatomy, genetics, ecology" },
+  {
+    id: "history",
+    name: "History",
+    description: "World history, civilizations, events",
+  },
+  {
+    id: "computer-science",
+    name: "Computer Science",
+    description: "Programming, algorithms, tech concepts",
+  },
+  {
+    id: "arts",
+    name: "Arts & Literature",
+    description: "Art history, literature, music",
+  },
+  {
+    id: "business",
+    name: "Business",
+    description: "Economics, management, finance",
+  },
+  { id: "other", name: "Other", description: "Other topics" },
+] as const;
+
+export type DeckTopic = (typeof DECK_TOPICS)[number]["id"];
+
 export default function CreateDeckPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -12,6 +50,8 @@ export default function CreateDeckPage() {
   const [form, setForm] = useState({
     title: "",
     description: "",
+    topic: "" as DeckTopic,
+    isPublic: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,6 +130,54 @@ export default function CreateDeckPage() {
                   placeholder="Add a description for your deck..."
                   disabled={isLoading}
                 />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="topic"
+                  className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
+                >
+                  Topic
+                </label>
+                <select
+                  id="topic"
+                  value={form.topic}
+                  onChange={(e) =>
+                    setForm({ ...form, topic: e.target.value as DeckTopic })
+                  }
+                  className="input w-full"
+                  disabled={isLoading}
+                  required
+                >
+                  <option value="">Select a topic</option>
+                  {DECK_TOPICS.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                  {DECK_TOPICS.find((t) => t.id === form.topic)?.description ||
+                    "Choose a topic to help others find your deck"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isPublic"
+                  checked={form.isPublic}
+                  onChange={(e) =>
+                    setForm({ ...form, isPublic: e.target.checked })
+                  }
+                  className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                />
+                <label
+                  htmlFor="isPublic"
+                  className="text-sm text-[var(--text-secondary)]"
+                >
+                  Share this deck with the community
+                </label>
               </div>
 
               {error && (
