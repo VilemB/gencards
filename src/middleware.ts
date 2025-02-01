@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
     "/decks",
     "/profile",
     "/settings",
+    "/community",
     "/api/decks",
     "/api/cards",
     "/api/user",

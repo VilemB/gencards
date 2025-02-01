@@ -17,10 +17,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 // Public navigation items
-const publicNavigation = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Community", href: "/community", icon: Users },
-];
+const publicNavigation = [{ name: "Home", href: "/", icon: Home }];
 
 // Protected navigation items (only for authenticated users)
 const protectedNavigation = [
