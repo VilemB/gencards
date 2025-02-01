@@ -19,6 +19,7 @@ export async function middleware(request: NextRequest) {
     "/dashboard",
     "/decks",
     "/profile",
+    "/settings",
     "/api/decks",
     "/api/cards",
     "/api/user",
@@ -26,6 +27,18 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
+
+  // Additional API route protection
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    const referer = request.headers.get("referer");
+    const isFromSameDomain = referer?.includes(
+      request.headers.get("host") || ""
+    );
+
+    if (!isFromSameDomain) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+  }
 
   // If the user is authenticated and tries to access auth pages, redirect to dashboard
   if (isAuthenticated && request.nextUrl.pathname.startsWith("/auth")) {
