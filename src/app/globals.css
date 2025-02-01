@@ -3,17 +3,21 @@
 @tailwind utilities;
 
 :root {
+  /* Light theme colors */
+  --background: #f8f9fa;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --error: #dc2626;
+
   /* Core colors */
-  --background: #fafafa;
   --foreground: #ffffff;
 
-  /* Text colors */
-  --text-primary: #18181b;
-  --text-secondary: #71717a;
-
   /* Brand colors */
-  --primary: #6366f1;
-  --primary-light: #e0e7ff;
   --primary-dark: #4f46e5;
 
   /* Accent colors */
@@ -24,13 +28,9 @@
   /* Semantic colors */
   --success: #10b981;
   --warning: #f59e0b;
-  --error: #ef4444;
   --info: #3b82f6;
 
   /* Neutral colors */
-  --neutral-50: #fafafa;
-  --neutral-100: #f4f4f5;
-  --neutral-200: #e4e4e7;
   --neutral-300: #d4d4d8;
   --neutral-400: #a1a1aa;
   --neutral-500: #71717a;
@@ -38,6 +38,31 @@
   --neutral-700: #3f3f46;
   --neutral-800: #27272a;
   --neutral-900: #18181b;
+}
+
+/* Dark theme colors */
+.dark {
+  --background: #111111;
+  --text-primary: #ffffff;
+  --text-secondary: #a3a3a3;
+  --primary: #3b82f6;
+  --primary-light: rgba(59, 130, 246, 0.1);
+  --neutral-50: #1a1a1a;
+  --neutral-100: #222222;
+  --neutral-200: #2a2a2a;
+  --error: #ef4444;
+  --foreground: #1a1a1a;
+}
+
+.dark .card,
+.dark .input,
+.dark select {
+  background-color: var(--neutral-50);
+  color: var(--text-primary);
+}
+
+.dark .bg-white {
+  background-color: var(--neutral-50);
 }
 
 @layer base {
@@ -49,6 +74,10 @@
   ::selection {
     @apply bg-[var(--primary-light)] text-[var(--primary-dark)];
   }
+
+  * {
+    @apply border-[var(--neutral-200)];
+  }
 }
 
 @layer components {
@@ -57,9 +86,7 @@
   }
 
   .input {
-    @apply block w-full rounded-lg border border-[var(--neutral-200)] bg-white/50 px-4 py-2.5 text-[var(--text-primary)]
-    focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-light)] focus:outline-none
-    disabled:cursor-not-allowed disabled:opacity-50;
+    @apply px-3 py-2 bg-white border border-[var(--neutral-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn {
@@ -69,13 +96,11 @@
   }
 
   .btn-primary {
-    @apply btn bg-[var(--primary)] text-white hover:bg-[var(--primary-dark)]
-    focus:ring-[var(--primary-light)] shadow-sm hover:shadow;
+    @apply inline-flex items-center px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply btn border-2 border-[var(--primary)] text-[var(--primary)]
-    hover:bg-[var(--primary-light)] focus:ring-[var(--primary-light)] bg-white/50;
+    @apply inline-flex items-center px-4 py-2 bg-[var(--neutral-100)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--neutral-200)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-ghost {

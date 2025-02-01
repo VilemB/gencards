@@ -15,28 +15,51 @@ interface Deck {
   updatedAt: string;
 }
 
+interface UserPreferences {
+  showStreak: boolean;
+  cardsPerDay: number;
+  theme: "light" | "dark" | "system";
+}
+
+interface UserData {
+  name: string;
+  email: string;
+  preferences?: UserPreferences;
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [recentDecks, setRecentDecks] = useState<Deck[]>([]);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function loadDecks() {
+    async function loadData() {
       try {
-        const response = await fetch("/api/decks");
-        if (response.ok) {
-          const decks = await response.json();
+        // Load user data
+        if (session?.user?.id) {
+          const userResponse = await fetch(`/api/user/${session.user.id}`);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            setUserData(userData);
+          }
+        }
+
+        // Load decks
+        const decksResponse = await fetch("/api/decks");
+        if (decksResponse.ok) {
+          const decks = await decksResponse.json();
           setRecentDecks(decks.slice(0, 3)); // Get 3 most recent decks
         }
       } catch (error) {
-        console.error("Error loading decks:", error);
+        console.error("Error loading data:", error);
       } finally {
         setIsLoading(false);
       }
     }
 
-    loadDecks();
-  }, []);
+    loadData();
+  }, [session]);
 
   if (isLoading) {
     return (
@@ -51,7 +74,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-            Welcome back, {session?.user?.name}!
+            Welcome back, {userData?.name || session?.user?.name}!
           </h1>
           <Button asChild>
             <Link href="/decks/create" className="gap-2">
@@ -63,7 +86,7 @@ export default function DashboardPage() {
 
         <div className="grid gap-6 md:grid-cols-3 mb-8">
           {/* Quick Stats */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="card">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-[var(--primary-light)] rounded-lg">
                 <Book className="h-5 w-5 text-[var(--primary)]" />
@@ -77,7 +100,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="card">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-[var(--primary-light)] rounded-lg">
                 <Trophy className="h-5 w-5 text-[var(--primary)]" />
@@ -89,23 +112,25 @@ export default function DashboardPage() {
             <p className="text-3xl font-bold text-[var(--text-primary)]">0</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                <Flame className="h-5 w-5 text-[var(--primary)]" />
+          {userData?.preferences?.showStreak !== false && (
+            <div className="card">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                  <Flame className="h-5 w-5 text-[var(--primary)]" />
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Study Streak
+                </h2>
               </div>
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                Study Streak
-              </h2>
+              <p className="text-3xl font-bold text-[var(--text-primary)]">
+                0 days
+              </p>
             </div>
-            <p className="text-3xl font-bold text-[var(--text-primary)]">
-              0 days
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Recent Decks */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="card">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-[var(--text-primary)]">
               Recent Decks

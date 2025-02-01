@@ -1,29 +1,14 @@
-import "./globals.css";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import ClientLayout from "./ClientLayout";
+import "./globals.css";
+import Header from "@/components/layout/Header";
+import { Providers } from "@/components/providers/Providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-  title: "GenCards - AI-Powered Flashcards for Smarter Learning",
-  description:
-    "Create and study flashcards enhanced by artificial intelligence for more effective learning.",
-  icons: {
-    icon: [
-      {
-        url: "/favicon.png",
-        type: "image/png",
-      },
-      {
-        url: "/favicon.png",
-        type: "image/png",
-      },
-    ],
-    apple: {
-      url: "/favicon.png",
-      type: "image/png",
-    },
-  },
+export const metadata: Metadata = {
+  title: "GenCards - AI-Powered Flashcards",
+  description: "Create and study flashcards with AI assistance",
 };
 
 export default function RootLayout({
@@ -32,9 +17,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full bg-gray-50">
-      <body className={`${inter.className} h-full`}>
-        <ClientLayout>{children}</ClientLayout>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
       </body>
     </html>
   );

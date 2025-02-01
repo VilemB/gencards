@@ -12,6 +12,7 @@ import {
   Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/providers/ThemeProvider";
 
 interface SettingsForm {
   name: string;
@@ -35,6 +36,7 @@ const CARDS_PER_DAY_OPTIONS = [
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<SettingsForm>({
@@ -49,16 +51,39 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
+    async function loadUserSettings() {
+      if (session?.user?.id) {
+        try {
+          const response = await fetch(`/api/user/${session.user.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            setForm({
+              name: data.name || "",
+              email: data.email || "",
+              preferences: data.preferences || {
+                dailyReminder: true,
+                showStreak: true,
+                cardsPerDay: 20,
+                theme: "system",
+              },
+            });
+            // Update theme if it exists in user preferences
+            if (data.preferences?.theme) {
+              setTheme(data.preferences.theme);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading user settings:", error);
+        }
+      }
+    }
+
     if (session?.user) {
-      setForm((prev) => ({
-        ...prev,
-        name: session.user.name || "",
-        email: session.user.email || "",
-      }));
+      loadUserSettings();
     } else if (status === "unauthenticated") {
       router.push("/auth/signin");
     }
-  }, [session, status, router]);
+  }, [session, status, router, setTheme]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +103,8 @@ export default function SettingsPage() {
         throw new Error(data.message || "Failed to update settings");
       }
 
+      // Update theme after successful save
+      setTheme(form.preferences.theme);
       router.refresh();
     } catch (err) {
       setError(

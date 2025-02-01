@@ -8,6 +8,12 @@ export interface UpdateParams {
   id: string;
 }
 
+interface UserPreferences {
+  showStreak: boolean;
+  cardsPerDay: number;
+  theme: "light" | "dark" | "system";
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,7 +32,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, preferences } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -37,9 +43,20 @@ export async function PUT(
 
     await connectToDatabase();
 
+    // Update user with preferences
+    const updateData: { name: string; preferences?: UserPreferences } = {
+      name,
+    };
+    if (preferences) {
+      updateData.preferences = preferences;
+    }
+
     const result = await mongoose.connection
       .collection("users")
-      .updateOne({ _id: new mongoose.Types.ObjectId(id) }, { $set: { name } });
+      .updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $set: updateData }
+      );
 
     if (result.matchedCount === 0) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
