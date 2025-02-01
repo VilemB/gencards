@@ -5,10 +5,11 @@ import { getUserById } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = await Promise.resolve(params.id);
+    // Since params is a promise-like object, we await it to get the id
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
