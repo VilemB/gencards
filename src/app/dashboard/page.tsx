@@ -112,7 +112,8 @@ export default function DashboardPage() {
             <p className="text-3xl font-bold text-[var(--text-primary)]">0</p>
           </div>
 
-          {userData?.preferences?.showStreak !== false && (
+          {/* Only show streak if user hasn't explicitly disabled it */}
+          {(userData?.preferences?.showStreak ?? true) && (
             <div className="card">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-[var(--primary-light)] rounded-lg">

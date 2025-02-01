@@ -40,7 +40,7 @@ export default function Header() {
   return (
     <Disclosure
       as="nav"
-      className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b border-[var(--neutral-200)]"
+      className="sticky top-0 z-40 border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/80 backdrop-blur-sm"
     >
       {({ open }) => (
         <>

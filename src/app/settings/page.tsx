@@ -57,14 +57,15 @@ export default function SettingsPage() {
           const response = await fetch(`/api/user/${session.user.id}`);
           if (response.ok) {
             const data = await response.json();
+            // Set form with current user data and preferences, using defaults only if needed
             setForm({
               name: data.name || "",
               email: data.email || "",
-              preferences: data.preferences || {
-                dailyReminder: true,
-                showStreak: true,
-                cardsPerDay: 20,
-                theme: "system",
+              preferences: {
+                dailyReminder: data.preferences?.dailyReminder ?? true,
+                showStreak: data.preferences?.showStreak ?? true,
+                cardsPerDay: data.preferences?.cardsPerDay ?? 20,
+                theme: data.preferences?.theme || "system",
               },
             });
             // Update theme if it exists in user preferences
