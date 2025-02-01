@@ -1,7 +1,6 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Book, Trophy, Clock } from "lucide-react";
 import Link from "next/link";
@@ -143,7 +142,7 @@ export default function DashboardPage() {
           ) : (
             <div className="text-center py-8">
               <p className="text-[var(--text-secondary)] mb-4">
-                You haven't created any decks yet
+                You haven&apos;t created any decks yet
               </p>
               <Button asChild>
                 <Link href="/decks/create">Create Your First Deck</Link>
