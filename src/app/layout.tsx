@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "GenCards - AI-Powered Flashcards",
   description: "Create and study flashcards with AI assistance",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
