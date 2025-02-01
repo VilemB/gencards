@@ -40,6 +40,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // If authenticated user tries to access landing page, redirect to dashboard
+  if (isAuthenticated && request.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // If the user is authenticated and tries to access auth pages, redirect to dashboard
   if (isAuthenticated && request.nextUrl.pathname.startsWith("/auth")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
