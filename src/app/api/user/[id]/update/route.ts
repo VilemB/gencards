@@ -10,10 +10,10 @@ export interface UpdateParams {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: UpdateParams }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = await Promise.resolve(params.id);
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
