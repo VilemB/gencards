@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Search, Loader2, BookOpen, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DECK_TOPICS } from "../decks/create/page";
+import { DECK_TOPICS } from "@/lib/constants";
 
 interface Deck {
   _id: string;
