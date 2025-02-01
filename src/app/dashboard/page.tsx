@@ -1,164 +1,154 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Loader2, Plus, Book, Trophy, Clock } from "lucide-react";
 import Link from "next/link";
-import {
-  PlusIcon,
-  BookOpenIcon,
-  DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/button";
 
 interface Deck {
   _id: string;
   title: string;
   description: string;
   cardCount: number;
-  lastStudied?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function Dashboard() {
-  const { data: session, status } = useSession();
-  const [decks, setDecks] = useState<Deck[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function DashboardPage() {
+  const { data: session } = useSession();
+  const [recentDecks, setRecentDecks] = useState<Deck[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchDecks() {
+    async function loadDecks() {
       try {
         const response = await fetch("/api/decks");
-        const data = await response.json();
-        setDecks(data);
+        if (response.ok) {
+          const decks = await response.json();
+          setRecentDecks(decks.slice(0, 3)); // Get 3 most recent decks
+        }
       } catch (error) {
-        console.error("Error fetching decks:", error);
+        console.error("Error loading decks:", error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     }
 
-    if (status === "authenticated") {
-      fetchDecks();
-    }
-  }, [status]);
+    loadDecks();
+  }, []);
 
-  if (status === "loading" || loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          Please sign in to access your dashboard
-        </h1>
-        <Link
-          href="/auth/signin"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Sign in
-        </Link>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="sm:flex sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {session?.user?.name}!
-            </h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Create, study, and manage your flashcard decks
+    <div className="min-h-screen bg-[var(--background)] py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+            Welcome back, {session?.user?.name}!
+          </h1>
+          <Button asChild>
+            <Link href="/decks/create" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Deck
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3 mb-8">
+          {/* Quick Stats */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                <Book className="h-5 w-5 text-[var(--primary)]" />
+              </div>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Total Decks
+              </h2>
+            </div>
+            <p className="text-3xl font-bold text-[var(--text-primary)]">
+              {recentDecks.length}
             </p>
           </div>
-          <div className="mt-4 sm:mt-0">
-            <Link
-              href="/decks/create"
-              className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Create New Deck
-            </Link>
+
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                <Trophy className="h-5 w-5 text-[var(--primary)]" />
+              </div>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Cards Mastered
+              </h2>
+            </div>
+            <p className="text-3xl font-bold text-[var(--text-primary)]">0</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                <Clock className="h-5 w-5 text-[var(--primary)]" />
+              </div>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Study Streak
+              </h2>
+            </div>
+            <p className="text-3xl font-bold text-[var(--text-primary)]">
+              0 days
+            </p>
           </div>
         </div>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {decks.length === 0 ? (
-            <div className="col-span-full text-center">
-              <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
-                No decks
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by creating a new deck
-              </p>
-              <div className="mt-6">
+        {/* Recent Decks */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+              Recent Decks
+            </h2>
+            <Button variant="ghost" asChild>
+              <Link href="/decks">View All</Link>
+            </Button>
+          </div>
+
+          {recentDecks.length > 0 ? (
+            <div className="grid gap-4">
+              {recentDecks.map((deck) => (
                 <Link
-                  href="/decks/create"
-                  className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  key={deck._id}
+                  href={`/decks/${deck._id}`}
+                  className="block bg-[var(--neutral-50)] rounded-lg p-4 hover:bg-[var(--neutral-100)] transition-colors"
                 >
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  Create New Deck
-                </Link>
-              </div>
-            </div>
-          ) : (
-            decks.map((deck) => (
-              <div
-                key={deck._id}
-                className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <BookOpenIcon className="h-10 w-10 text-indigo-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/decks/${deck._id}`}
-                      className="focus:outline-none"
-                    >
-                      <h3 className="text-lg font-medium text-gray-900">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-[var(--text-primary)]">
                         {deck.title}
                       </h3>
-                      <p className="text-sm text-gray-500 truncate">
-                        {deck.description}
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        {deck.description || "No description"}
                       </p>
-                    </Link>
-                    <div className="mt-2 flex items-center text-sm text-gray-500">
-                      <span>{deck.cardCount} cards</span>
-                      {deck.lastStudied && (
-                        <>
-                          <span className="mx-2">&middot;</span>
-                          <span>
-                            Last studied{" "}
-                            {new Date(deck.lastStudied).toLocaleDateString()}
-                          </span>
-                        </>
-                      )}
                     </div>
+                    <span className="text-sm text-[var(--text-secondary)]">
+                      {deck.cardCount} cards
+                    </span>
                   </div>
-                </div>
-                <div className="mt-4 flex space-x-3">
-                  <Link
-                    href={`/decks/${deck._id}/study`}
-                    className="flex-1 rounded-md bg-white px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 border border-indigo-600 text-center"
-                  >
-                    Study
-                  </Link>
-                  <Link
-                    href={`/decks/${deck._id}/edit`}
-                    className="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 text-center"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              </div>
-            ))
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-[var(--text-secondary)] mb-4">
+                You haven't created any decks yet
+              </p>
+              <Button asChild>
+                <Link href="/decks/create">Create Your First Deck</Link>
+              </Button>
+            </div>
           )}
         </div>
       </div>
