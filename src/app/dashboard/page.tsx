@@ -41,6 +41,7 @@ export default function DashboardPage() {
           const userResponse = await fetch(`/api/user/${session.user.id}`);
           if (userResponse.ok) {
             const userData = await userResponse.json();
+            console.log("This is the userData:", userData);
             setUserData(userData);
           }
         }

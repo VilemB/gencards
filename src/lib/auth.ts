@@ -11,6 +11,12 @@ interface UserData {
   name: string;
   email: string;
   image?: string;
+  preferences?: {
+    dailyReminder: boolean;
+    showStreak: boolean;
+    cardsPerDay: number;
+    theme: "light" | "dark" | "system";
+  };
 }
 
 export async function getUserById(userId: string): Promise<UserData | null> {
@@ -27,6 +33,7 @@ export async function getUserById(userId: string): Promise<UserData | null> {
       name: user.name,
       email: user.email,
       image: user.image,
+      preferences: user.preferences,
     };
   } catch (error) {
     console.error("Error fetching user:", error);

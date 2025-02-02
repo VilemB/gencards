@@ -10,6 +10,12 @@ export interface IUser extends mongoose.Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  preferences: {
+    dailyReminder: boolean;
+    showStreak: boolean;
+    cardsPerDay: number;
+    theme: "light" | "dark" | "system";
+  };
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -37,6 +43,15 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     emailVerified: {
       type: Date,
+    },
+    preferences: {
+      type: Object,
+      default: {
+        dailyReminder: false,
+        showStreak: true,
+        cardsPerDay: 20,
+        theme: "system",
+      },
     },
   },
   {
