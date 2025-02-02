@@ -84,7 +84,13 @@ export default function DashboardPage() {
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div
+          className={`grid gap-6 ${
+            userData?.preferences?.showStreak
+              ? "md:grid-cols-3"
+              : "md:grid-cols-2"
+          } mb-8`}
+        >
           {/* Quick Stats */}
           <div className="card">
             <div className="flex items-center gap-3 mb-2">
@@ -113,7 +119,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Only show streak if user has explicitly enabled it */}
-          {userData?.preferences?.showStreak === true && (
+          {userData?.preferences?.showStreak && (
             <div className="card">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-[var(--primary-light)] rounded-lg">
