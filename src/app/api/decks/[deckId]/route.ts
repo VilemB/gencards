@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import Deck from "@/models/Deck";
+import mongoose from "mongoose";
 
 // GET /api/decks/[deckId]
 export async function GET(
@@ -13,6 +14,11 @@ export async function GET(
     const session = await getServerSession(authOptions);
     await connectToDatabase();
     const { deckId } = await context.params;
+
+    // Validate if deckId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(deckId)) {
+      return new NextResponse("Invalid deck ID", { status: 400 });
+    }
 
     const deck = await Deck.findById(deckId);
     if (!deck) {
@@ -44,6 +50,11 @@ export async function DELETE(
 
     await connectToDatabase();
     const { deckId } = await context.params;
+
+    // Validate if deckId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(deckId)) {
+      return new NextResponse("Invalid deck ID", { status: 400 });
+    }
 
     const deck = await Deck.findById(deckId);
     if (!deck) {
@@ -77,6 +88,11 @@ export async function PATCH(
     const body = await req.json();
     await connectToDatabase();
     const { deckId } = await context.params;
+
+    // Validate if deckId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(deckId)) {
+      return new NextResponse("Invalid deck ID", { status: 400 });
+    }
 
     const deck = await Deck.findById(deckId);
     if (!deck) {
