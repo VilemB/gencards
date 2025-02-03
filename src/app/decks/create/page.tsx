@@ -19,7 +19,7 @@ export default function CreateDeckPage() {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CreateDeckForm>({
     title: "",
     description: "",
     topic: "Languages",
