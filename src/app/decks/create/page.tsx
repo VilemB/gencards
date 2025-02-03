@@ -19,10 +19,10 @@ export default function CreateDeckPage() {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState<CreateDeckForm>({
+  const [form, setForm] = useState({
     title: "",
     description: "",
-    topic: DECK_TOPICS[0].id,
+    topic: "Languages",
     isPublic: false,
   });
 
@@ -32,11 +32,12 @@ export default function CreateDeckPage() {
     setError("");
 
     try {
-      const userId = await Promise.resolve(session?.user?.id);
-      const response = await fetch("/api/decks/create", {
+      const response = await fetch("/api/decks", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, userId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
       });
 
       if (!response.ok) {
@@ -44,8 +45,10 @@ export default function CreateDeckPage() {
         throw new Error(data.message || "Failed to create deck");
       }
 
-      router.push("/decks");
+      const deck = await response.json();
+      router.push(`/decks/${deck._id}`);
     } catch (err) {
+      console.error("Error creating deck:", err);
       setError(err instanceof Error ? err.message : "Failed to create deck");
     } finally {
       setIsLoading(false);

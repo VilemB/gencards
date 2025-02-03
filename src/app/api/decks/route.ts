@@ -2,68 +2,65 @@ import "dotenv/config";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
+import Deck from "@/models/Deck";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     await connectToDatabase();
-    const decks = await mongoose.connection
-      .collection("decks")
-      .find({ userId: new mongoose.Types.ObjectId(session.user.id) })
-      .sort({ createdAt: -1 })
-      .toArray();
 
-    // Ensure we always return an array, even if empty
-    return NextResponse.json(Array.isArray(decks) ? decks : []);
+    const decks = await Deck.find({ userId: session.user.id }).sort({
+      createdAt: -1,
+    });
+
+    return NextResponse.json(decks);
   } catch (error) {
     console.error("Error fetching decks:", error);
-    // Return empty array instead of error to prevent map issues
-    return NextResponse.json([]);
+    return NextResponse.json(
+      { message: "Error fetching decks" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { title, description } = await req.json();
+    const { title, description, topic, isPublic } = await req.json();
 
-    if (!title) {
+    // Validate required fields
+    if (!title || !description || !topic) {
       return NextResponse.json(
-        { message: "Title is required" },
+        { message: "Missing required fields" },
         { status: 400 }
       );
     }
 
     await connectToDatabase();
-    const result = await mongoose.connection.collection("decks").insertOne({
+
+    const deck = await Deck.create({
+      userId: session.user.id,
       title,
       description,
-      userId: new mongoose.Types.ObjectId(session.user.id),
+      topic,
+      isPublic: isPublic || false,
       cardCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
 
-    return NextResponse.json(
-      { message: "Deck created successfully", deckId: result.insertedId },
-      { status: 201 }
-    );
+    return NextResponse.json(deck);
   } catch (error) {
     console.error("Error creating deck:", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Error creating deck" },
       { status: 500 }
     );
   }
