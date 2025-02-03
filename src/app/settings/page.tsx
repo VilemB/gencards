@@ -11,9 +11,12 @@ import {
   Eye,
   Palette,
   Trash2,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { Toast } from "@/components/ui/Toast";
+import { Modal } from "@/components/ui/Modal";
 
 interface SettingsForm {
   name: string;
@@ -42,6 +45,9 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<SettingsForm | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   useEffect(() => {
     async function loadUserSettings() {
@@ -98,17 +104,8 @@ export default function SettingsPage() {
         throw new Error("Failed to update settings");
       }
 
-      // Update theme if it was changed
       setTheme(form.preferences.theme);
-
-      // Show success message
-      const successMessage = document.getElementById("successMessage");
-      if (successMessage) {
-        successMessage.classList.remove("opacity-0");
-        setTimeout(() => {
-          successMessage.classList.add("opacity-0");
-        }, 3000);
-      }
+      setShowSuccessToast(true);
     } catch (err) {
       console.error("Error updating settings:", err);
       setError("Failed to update settings. Please try again.");
@@ -118,14 +115,6 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete your account? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
-
     setIsDeleting(true);
     try {
       const userId = session?.user?.id;
@@ -156,279 +145,311 @@ export default function SettingsPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-[var(--background)] py-8">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                <Settings className="h-6 w-6 text-[var(--primary)]" />
-              </div>
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                Settings
-              </h1>
-            </div>
-            <div
-              id="successMessage"
-              className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full transition-opacity duration-300 opacity-0"
-            >
-              Settings saved successfully!
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Profile Section */}
-            <div className="bg-[var(--background)] border border-[var(--neutral-200)] rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  Profile
-                </h2>
-                <div className="flex-1 border-b border-[var(--neutral-200)]"></div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                  >
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
-                    disabled={isLoading}
-                  />
+    <>
+      <div className="min-h-screen bg-[var(--background)] py-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                  <Settings className="h-6 w-6 text-[var(--primary)]" />
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={form.email}
-                    className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-2 text-[var(--text-secondary)] sm:text-sm cursor-not-allowed"
-                    disabled
-                  />
-                  <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                    Email is managed through your authentication provider
-                  </p>
-                </div>
+                <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                  Settings
+                </h1>
               </div>
             </div>
 
-            {/* Study Preferences */}
-            <div className="bg-[var(--background)] border border-[var(--neutral-200)] rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  Study Preferences
-                </h2>
-                <div className="flex-1 border-b border-[var(--neutral-200)]"></div>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <label
-                    htmlFor="cardsPerDay"
-                    className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                  >
-                    Daily Study Goal
-                  </label>
-                  <select
-                    id="cardsPerDay"
-                    value={form.preferences.cardsPerDay}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        preferences: {
-                          ...form.preferences,
-                          cardsPerDay: Number(e.target.value),
-                        },
-                      })
-                    }
-                    className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
-                    disabled={isLoading}
-                  >
-                    {CARDS_PER_DAY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                    Set your daily study goal to maintain a steady learning pace
-                  </p>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Profile Section */}
+              <div className="bg-[var(--background)] border border-[var(--neutral-200)] rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Profile
+                  </h2>
+                  <div className="flex-1 border-b border-[var(--neutral-200)]"></div>
                 </div>
 
-                {/* Toggles Section */}
                 <div className="space-y-4">
-                  {/* Daily Reminder Toggle */}
-                  <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                        <Bell className="h-4 w-4 text-[var(--primary)]" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-[var(--text-primary)]">
-                          Daily Reminder
-                        </p>
-                        <p className="text-sm text-[var(--text-secondary)]">
-                          Get notified when it&apos;s time to study
-                        </p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.preferences.dailyReminder}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            preferences: {
-                              ...form.preferences,
-                              dailyReminder: e.target.checked,
-                            },
-                          })
-                        }
-                        className="sr-only peer"
-                        disabled={isLoading}
-                      />
-                      <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                    >
+                      Display Name
                     </label>
+                    <input
+                      type="text"
+                      id="name"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
+                      className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
+                      disabled={isLoading}
+                    />
                   </div>
 
-                  {/* Show Streak Toggle */}
-                  <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                        <Eye className="h-4 w-4 text-[var(--primary)]" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-[var(--text-primary)]">
-                          Show Streak
-                        </p>
-                        <p className="text-sm text-[var(--text-secondary)]">
-                          Display your study streak on dashboard
-                        </p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.preferences.showStreak}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            preferences: {
-                              ...form.preferences,
-                              showStreak: e.target.checked,
-                            },
-                          })
-                        }
-                        className="sr-only peer"
-                        disabled={isLoading}
-                      />
-                      <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                    >
+                      Email Address
                     </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={form.email}
+                      className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-2 text-[var(--text-secondary)] sm:text-sm cursor-not-allowed"
+                      disabled
+                    />
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      Email is managed through your authentication provider
+                    </p>
                   </div>
+                </div>
+              </div>
 
-                  {/* Theme Selection */}
-                  <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                        <Palette className="h-4 w-4 text-[var(--primary)]" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-[var(--text-primary)]">
-                          Theme
-                        </p>
-                        <p className="text-sm text-[var(--text-secondary)]">
-                          Choose your preferred theme
-                        </p>
-                      </div>
-                    </div>
+              {/* Study Preferences */}
+              <div className="bg-[var(--background)] border border-[var(--neutral-200)] rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Study Preferences
+                  </h2>
+                  <div className="flex-1 border-b border-[var(--neutral-200)]"></div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label
+                      htmlFor="cardsPerDay"
+                      className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                    >
+                      Daily Study Goal
+                    </label>
                     <select
-                      value={form.preferences.theme}
+                      id="cardsPerDay"
+                      value={form.preferences.cardsPerDay}
                       onChange={(e) =>
                         setForm({
                           ...form,
                           preferences: {
                             ...form.preferences,
-                            theme: e.target.value as
-                              | "light"
-                              | "dark"
-                              | "system",
+                            cardsPerDay: Number(e.target.value),
                           },
                         })
                       }
-                      className="rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
+                      className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
                       disabled={isLoading}
                     >
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                      <option value="system">System</option>
+                      {CARDS_PER_DAY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      Set your daily study goal to maintain a steady learning
+                      pace
+                    </p>
+                  </div>
+
+                  {/* Toggles Section */}
+                  <div className="space-y-4">
+                    {/* Daily Reminder Toggle */}
+                    <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                          <Bell className="h-4 w-4 text-[var(--primary)]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[var(--text-primary)]">
+                            Daily Reminder
+                          </p>
+                          <p className="text-sm text-[var(--text-secondary)]">
+                            Get notified when it&apos;s time to study
+                          </p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.preferences.dailyReminder}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              preferences: {
+                                ...form.preferences,
+                                dailyReminder: e.target.checked,
+                              },
+                            })
+                          }
+                          className="sr-only peer"
+                          disabled={isLoading}
+                        />
+                        <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                      </label>
+                    </div>
+
+                    {/* Show Streak Toggle */}
+                    <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                          <Eye className="h-4 w-4 text-[var(--primary)]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[var(--text-primary)]">
+                            Show Streak
+                          </p>
+                          <p className="text-sm text-[var(--text-secondary)]">
+                            Display your study streak on dashboard
+                          </p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.preferences.showStreak}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              preferences: {
+                                ...form.preferences,
+                                showStreak: e.target.checked,
+                              },
+                            })
+                          }
+                          className="sr-only peer"
+                          disabled={isLoading}
+                        />
+                        <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                      </label>
+                    </div>
+
+                    {/* Theme Selection */}
+                    <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                          <Palette className="h-4 w-4 text-[var(--primary)]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[var(--text-primary)]">
+                            Theme
+                          </p>
+                          <p className="text-sm text-[var(--text-secondary)]">
+                            Choose your preferred theme
+                          </p>
+                        </div>
+                      </div>
+                      <select
+                        value={form.preferences.theme}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            preferences: {
+                              ...form.preferences,
+                              theme: e.target.value as
+                                | "light"
+                                | "dark"
+                                | "system",
+                            },
+                          })
+                        }
+                        className="rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
+                        disabled={isLoading}
+                      >
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {error && (
-              <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
-                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm">{error}</p>
-              </div>
-            )}
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-4 pt-4">
-              <Button
-                type="submit"
-                className="w-full transition-all"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving changes...</span>
-                  </div>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-4 pt-4">
+                <Button
+                  type="submit"
+                  className="w-full transition-all"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving changes...</span>
+                    </div>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
 
-              <Button
-                type="button"
-                variant="destructive"
-                className="w-full transition-all"
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Deleting account...</span>
-                  </div>
-                ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full transition-all"
+                  onClick={() => setShowSignOutModal(true)}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="w-full transition-all"
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={isDeleting}
+                >
                   <div className="flex items-center justify-center gap-2">
                     <Trash2 className="h-4 w-4" />
                     <span>Delete Account</span>
                   </div>
-                )}
-              </Button>
-            </div>
-          </form>
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <Toast
+          message="Settings saved successfully!"
+          onClose={() => setShowSuccessToast(false)}
+        />
+      )}
+
+      {/* Delete Account Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Account"
+        description="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted."
+        confirmText="Delete Account"
+        onConfirm={handleDeleteAccount}
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
+
+      {/* Sign Out Modal */}
+      <Modal
+        isOpen={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        title="Sign Out"
+        description="Are you sure you want to sign out?"
+        confirmText="Sign Out"
+        onConfirm={() => signOut()}
+      />
+    </>
   );
 }
