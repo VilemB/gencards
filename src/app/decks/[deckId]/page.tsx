@@ -1,9 +1,9 @@
 import DeckClient from "./DeckClient";
 
 interface Props {
-  params: {
+  params: Promise<{
     deckId: string;
-  };
+  }>;
 }
 
 export default async function DeckPage({ params }: Props) {
