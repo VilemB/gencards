@@ -47,11 +47,14 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
+    // Capitalize the first letter of the topic
+    const capitalizedTopic = topic.charAt(0).toUpperCase() + topic.slice(1);
+
     const deck = await Deck.create({
       userId: session.user.id,
       title,
       description,
-      topic,
+      topic: capitalizedTopic,
       isPublic: isPublic || false,
       cardCount: 0,
     });
