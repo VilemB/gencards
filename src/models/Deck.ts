@@ -1,5 +1,21 @@
 import mongoose from "mongoose";
 
+const cardSchema = new mongoose.Schema(
+  {
+    front: {
+      type: String,
+      required: true,
+    },
+    back: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const deckSchema = new mongoose.Schema(
   {
     userId: {
@@ -25,6 +41,10 @@ const deckSchema = new mongoose.Schema(
     cardCount: {
       type: Number,
       default: 0,
+    },
+    cards: {
+      type: [cardSchema],
+      default: [],
     },
   },
   {
