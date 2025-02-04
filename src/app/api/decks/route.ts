@@ -5,7 +5,20 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import Deck from "@/models/Deck";
 
-export async function GET() {
+interface DeckQuery {
+  userId?: string;
+  topic?: { $regex: string; $options: string };
+  $or?: Array<
+    | {
+        title: { $regex: string; $options: string };
+      }
+    | {
+        description: { $regex: string; $options: string };
+      }
+  >;
+}
+
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -14,11 +27,45 @@ export async function GET() {
 
     await connectToDatabase();
 
-    const decks = await Deck.find({ userId: session.user.id }).sort({
-      createdAt: -1,
-    });
+    // Get query params
+    const { searchParams } = new URL(req.url);
+    const ownership = searchParams.get("ownership"); // "my" | "others" | null
+    const topic = searchParams.get("topic");
+    const search = searchParams.get("search");
 
-    return NextResponse.json(decks);
+    // Build query
+    const query: DeckQuery = {};
+
+    // Handle ownership filter
+    if (ownership === "my") {
+      query.userId = session.user.id;
+    } else if (ownership === "others") {
+      query.userId = { $ne: session.user.id };
+    }
+
+    // Handle topic filter
+    if (topic) {
+      query.topic = { $regex: `^${topic}$`, $options: "i" };
+    }
+
+    // Handle search
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const decks = await Deck.find(query)
+      .select("title description topic cardCount userId createdAt")
+      .sort({ createdAt: -1 });
+
+    // Get unique topics
+    const topics = (await Deck.distinct("topic"))
+      .map((topic) => topic.charAt(0).toUpperCase() + topic.slice(1))
+      .sort();
+
+    return NextResponse.json({ decks, topics });
   } catch (error) {
     console.error("Error fetching decks:", error);
     return NextResponse.json(
