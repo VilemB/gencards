@@ -6,7 +6,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import Deck from "@/models/Deck";
 
 interface DeckQuery {
-  userId?: string;
+  userId?: string | { $ne: string };
   topic?: { $regex: string; $options: string };
   $or?: Array<
     | {

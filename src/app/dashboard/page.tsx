@@ -30,6 +30,7 @@ interface UserData {
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [recentDecks, setRecentDecks] = useState<Deck[]>([]);
+  const [totalDecks, setTotalDecks] = useState(0);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,16 +42,16 @@ export default function DashboardPage() {
           const userResponse = await fetch(`/api/user/${session.user.id}`);
           if (userResponse.ok) {
             const userData = await userResponse.json();
-            console.log("This is the userData:", userData);
             setUserData(userData);
           }
         }
 
-        // Load decks
-        const decksResponse = await fetch("/api/decks");
+        // Load decks created by the user
+        const decksResponse = await fetch("/api/decks?ownership=my");
         if (decksResponse.ok) {
-          const decks = await decksResponse.json();
-          setRecentDecks(decks.slice(0, 3)); // Get 3 most recent decks
+          const data = await decksResponse.json();
+          setRecentDecks(data.decks.slice(0, 3)); // Get 3 most recent decks
+          setTotalDecks(data.decks.length); // Set total number of decks
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -103,7 +104,7 @@ export default function DashboardPage() {
               </h2>
             </div>
             <p className="text-3xl font-bold text-[var(--text-primary)]">
-              {recentDecks.length}
+              {totalDecks}
             </p>
           </div>
 
