@@ -164,7 +164,7 @@ export default function CommunityContent() {
                     <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover/title:text-[var(--primary)] transition-colors">
                       {deck.title}
                     </h2>
-                    <p className="text-[var(--text-secondary)] mt-1">
+                    <p className="text-[var(--text-secondary)] mt-1 line-clamp-2">
                       {deck.description}
                     </p>
                   </Link>
