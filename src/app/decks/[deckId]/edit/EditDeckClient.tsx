@@ -22,7 +22,6 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
-import { Editor } from "@tiptap/react";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 
 interface Card {
