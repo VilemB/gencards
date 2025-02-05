@@ -3,10 +3,27 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, X, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  X,
+  AlertTriangle,
+  GripVertical,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/Modal";
 import { Toast } from "@/components/ui/Toast";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
+import { Editor } from "@tiptap/react";
+import RichTextEditor from "@/components/editor/RichTextEditor";
 
 interface Card {
   _id: string;
@@ -33,6 +50,12 @@ interface Props {
   deckId: string;
 }
 
+interface CardForm {
+  id: string;
+  front: string;
+  back: string;
+}
+
 export default function EditDeckClient({ deckId }: Props) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -42,13 +65,16 @@ export default function EditDeckClient({ deckId }: Props) {
   const [error, setError] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [currentPreviewCard, setCurrentPreviewCard] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [topic, setTopic] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [cards, setCards] = useState<{ front: string; back: string }[]>([]);
+  const [cards, setCards] = useState<CardForm[]>([]);
 
   useEffect(() => {
     async function loadDeck() {
@@ -67,6 +93,7 @@ export default function EditDeckClient({ deckId }: Props) {
         setIsPublic(data.isPublic);
         setCards(
           data.cards.map((card: Card) => ({
+            id: card._id,
             front: card.front,
             back: card.back,
           }))
@@ -84,8 +111,18 @@ export default function EditDeckClient({ deckId }: Props) {
     }
   }, [deckId]);
 
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(cards);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setCards(items);
+  };
+
   const handleAddCard = () => {
-    setCards([...cards, { front: "", back: "" }]);
+    setCards([...cards, { id: `new-${cards.length}`, front: "", back: "" }]);
   };
 
   const handleRemoveCard = (index: number) => {
@@ -128,7 +165,7 @@ export default function EditDeckClient({ deckId }: Props) {
           description,
           topic,
           isPublic,
-          cards,
+          cards: cards.map(({ front, back }) => ({ front, back })),
           cardCount: cards.length,
         }),
       });
@@ -144,6 +181,26 @@ export default function EditDeckClient({ deckId }: Props) {
       setError(err instanceof Error ? err.message : "Failed to update deck");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const togglePreview = () => {
+    setShowPreview(!showPreview);
+    setCurrentPreviewCard(0);
+    setIsFlipped(false);
+  };
+
+  const nextPreviewCard = () => {
+    if (currentPreviewCard < cards.length - 1) {
+      setCurrentPreviewCard(currentPreviewCard + 1);
+      setIsFlipped(false);
+    }
+  };
+
+  const previousPreviewCard = () => {
+    if (currentPreviewCard > 0) {
+      setCurrentPreviewCard(currentPreviewCard - 1);
+      setIsFlipped(false);
     }
   };
 
@@ -174,6 +231,80 @@ export default function EditDeckClient({ deckId }: Props) {
     return null;
   }
 
+  if (showPreview) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+              Preview Cards
+            </h1>
+            <Button onClick={togglePreview} variant="outline" className="gap-2">
+              <EyeOff className="h-4 w-4" />
+              Exit Preview
+            </Button>
+          </div>
+
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <div
+              className={`relative w-full max-w-2xl aspect-[3/2] cursor-pointer transition-transform duration-700 transform-gpu ${
+                isFlipped ? "rotate-y-180" : ""
+              }`}
+              onClick={() => setIsFlipped(!isFlipped)}
+            >
+              <div
+                className={`absolute inset-0 backface-hidden bg-[var(--neutral-50)] rounded-xl p-8 flex flex-col ${
+                  isFlipped ? "rotate-y-180 invisible" : ""
+                }`}
+              >
+                <div className="flex-1 flex items-center justify-center">
+                  <div
+                    className="prose prose-neutral max-w-none w-full"
+                    dangerouslySetInnerHTML={{
+                      __html: cards[currentPreviewCard]?.front || "",
+                    }}
+                  />
+                </div>
+              </div>
+              <div
+                className={`absolute inset-0 backface-hidden bg-[var(--neutral-50)] rounded-xl p-8 flex flex-col rotate-y-180 ${
+                  isFlipped ? "visible" : "invisible"
+                }`}
+              >
+                <div className="flex-1 flex items-center justify-center">
+                  <div
+                    className="prose prose-neutral max-w-none w-full"
+                    dangerouslySetInnerHTML={{
+                      __html: cards[currentPreviewCard]?.back || "",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 mt-8">
+              <Button
+                onClick={previousPreviewCard}
+                disabled={currentPreviewCard === 0}
+              >
+                Previous
+              </Button>
+              <span className="text-[var(--text-secondary)]">
+                {currentPreviewCard + 1} / {cards.length}
+              </span>
+              <Button
+                onClick={nextPreviewCard}
+                disabled={currentPreviewCard === cards.length - 1}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -184,6 +315,15 @@ export default function EditDeckClient({ deckId }: Props) {
               Edit Deck
             </h1>
             <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={togglePreview}
+                className="gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Preview
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -283,82 +423,115 @@ export default function EditDeckClient({ deckId }: Props) {
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                 Cards
               </h2>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddCard}
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Card
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {cards.map((card, index) => (
-                <div
-                  key={index}
-                  className="relative bg-[var(--neutral-50)] rounded-lg p-4"
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    // TODO: Implement AI assistance
+                  }}
+                  className="gap-2"
                 >
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveCard(index)}
-                    className="absolute top-2 right-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor={`front-${index}`}
-                        className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                      >
-                        Front
-                      </label>
-                      <textarea
-                        id={`front-${index}`}
-                        value={card.front}
-                        onChange={(e) =>
-                          handleCardChange(index, "front", e.target.value)
-                        }
-                        rows={3}
-                        className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-                        placeholder="Enter card front"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor={`back-${index}`}
-                        className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                      >
-                        Back
-                      </label>
-                      <textarea
-                        id={`back-${index}`}
-                        value={card.back}
-                        onChange={(e) =>
-                          handleCardChange(index, "back", e.target.value)
-                        }
-                        rows={3}
-                        className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-                        placeholder="Enter card back"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {cards.length === 0 && (
-                <div className="text-center py-8 bg-[var(--neutral-50)] rounded-lg">
-                  <p className="text-[var(--text-secondary)]">
-                    No cards yet. Click &quot;Add Card&quot; to create your
-                    first card.
-                  </p>
-                </div>
-              )}
+                  <Sparkles className="h-4 w-4" />
+                  AI Assist
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddCard}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Card
+                </Button>
+              </div>
             </div>
+
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="cards">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-4"
+                  >
+                    {cards.map((card, index) => (
+                      <Draggable
+                        key={card.id}
+                        draggableId={card.id}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className="relative bg-[var(--neutral-50)] rounded-lg p-4"
+                          >
+                            <div className="absolute top-4 right-4 flex items-center gap-2">
+                              <div
+                                {...provided.dragHandleProps}
+                                className="cursor-grab text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                              >
+                                <GripVertical className="h-4 w-4" />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCard(index)}
+                                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-4 pr-16">
+                              <div>
+                                <label
+                                  htmlFor={`front-${index}`}
+                                  className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                                >
+                                  Front
+                                </label>
+                                <RichTextEditor
+                                  content={card.front}
+                                  onChange={(content) =>
+                                    handleCardChange(index, "front", content)
+                                  }
+                                  placeholder="Enter card front"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor={`back-${index}`}
+                                  className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                                >
+                                  Back
+                                </label>
+                                <RichTextEditor
+                                  content={card.back}
+                                  onChange={(content) =>
+                                    handleCardChange(index, "back", content)
+                                  }
+                                  placeholder="Enter card back"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+
+            {cards.length === 0 && (
+              <div className="text-center py-8 bg-[var(--neutral-50)] rounded-lg">
+                <p className="text-[var(--text-secondary)]">
+                  No cards yet. Click &quot;Add Card&quot; to create your first
+                  card.
+                </p>
+              </div>
+            )}
           </div>
 
           {error && (
