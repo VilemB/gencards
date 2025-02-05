@@ -43,7 +43,21 @@ export default function RichTextEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      // Check if content has any formatting
+      const hasFormatting =
+        editor.isActive("bold") ||
+        editor.isActive("italic") ||
+        editor.isActive("bulletList") ||
+        editor.isActive("orderedList") ||
+        editor.isActive("codeBlock") ||
+        editor.isActive("blockquote");
+
+      // If no formatting, just return the plain text
+      if (!hasFormatting && !editor.getText().includes("\n")) {
+        onChange(editor.getText());
+      } else {
+        onChange(editor.getHTML());
+      }
     },
   });
 

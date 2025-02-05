@@ -12,6 +12,7 @@ import {
   ThumbsDown,
   Timer,
   ArrowLeft,
+  Keyboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/Modal";
@@ -41,8 +42,13 @@ export default function StudyClient({ deckId }: Props) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [studyStartTime] = useState(new Date());
   const [elapsedTime, setElapsedTime] = useState("00:00");
+  const [cardScores, setCardScores] = useState<
+    Record<string, "good" | "bad" | null>
+  >({});
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   useEffect(() => {
     async function loadDeck() {
@@ -87,6 +93,9 @@ export default function StudyClient({ deckId }: Props) {
       setTimeout(() => {
         setCurrentCardIndex(currentCardIndex + 1);
       }, 200);
+    } else {
+      // Show completion modal or redirect to results
+      handleCompletion();
     }
   };
 
@@ -103,13 +112,32 @@ export default function StudyClient({ deckId }: Props) {
     setIsFlipped(!isFlipped);
   };
 
+  const handleScore = (score: "good" | "bad") => {
+    if (!deck) return;
+    const cardId = deck.cards[currentCardIndex]._id;
+    setCardScores((prev) => ({ ...prev, [cardId]: score }));
+    // Auto-advance to next card after scoring
+    setTimeout(handleNext, 300);
+  };
+
+  const handleCompletion = () => {
+    // Save progress to backend (to be implemented)
+    // For now, just show completion modal
+    setShowCompletionModal(true);
+  };
+
   const handleKeyPress = (e: KeyboardEvent) => {
     if (e.code === "Space" || e.code === "Enter") {
+      e.preventDefault();
       handleFlip();
-    } else if (e.code === "ArrowRight") {
+    } else if (e.code === "ArrowRight" || e.code === "KeyN") {
       handleNext();
-    } else if (e.code === "ArrowLeft") {
+    } else if (e.code === "ArrowLeft" || e.code === "KeyP") {
       handlePrevious();
+    } else if (e.code === "KeyG") {
+      handleScore("good");
+    } else if (e.code === "KeyB") {
+      handleScore("bad");
     }
   };
 
@@ -145,7 +173,7 @@ export default function StudyClient({ deckId }: Props) {
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[var(--neutral-200)]">
+      <header className="border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -165,9 +193,19 @@ export default function StudyClient({ deckId }: Props) {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-              <Timer className="h-4 w-4" />
-              {elapsedTime}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowKeyboardShortcuts(true)}
+                className="hidden sm:flex"
+              >
+                <Keyboard className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                <Timer className="h-4 w-4" />
+                {elapsedTime}
+              </div>
             </div>
           </div>
         </div>
@@ -184,11 +222,11 @@ export default function StudyClient({ deckId }: Props) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-transparent to-[var(--neutral-50)]/20">
         <div className="w-full max-w-3xl">
           {/* Card */}
           <div
-            className="relative w-full aspect-[3/2] cursor-pointer"
+            className="relative w-full aspect-[3/2] cursor-pointer perspective-1000"
             onClick={handleFlip}
           >
             <AnimatePresence mode="wait">
@@ -197,13 +235,15 @@ export default function StudyClient({ deckId }: Props) {
                 initial={{ rotateY: isFlipped ? -180 : 0, opacity: 0 }}
                 animate={{ rotateY: 0, opacity: 1 }}
                 exit={{ rotateY: isFlipped ? 0 : 180, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0 bg-[var(--neutral-50)] rounded-xl p-8 flex flex-col backface-hidden"
-                style={{ perspective: 2000 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="absolute inset-0 bg-white rounded-xl shadow-lg p-8 flex flex-col backface-hidden"
+                style={{
+                  transformStyle: "preserve-3d",
+                }}
               >
                 <div className="flex-1 flex items-center justify-center">
                   <div
-                    className="prose prose-neutral max-w-none w-full"
+                    className="prose prose-lg max-w-none w-full text-center"
                     dangerouslySetInnerHTML={{
                       __html: isFlipped ? currentCard.back : currentCard.front,
                     }}
@@ -232,13 +272,32 @@ export default function StudyClient({ deckId }: Props) {
                 variant="outline"
                 size="icon"
                 onClick={() => setIsFlipped(false)}
+                className="hover:bg-[var(--neutral-100)]"
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="text-red-500">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleScore("bad")}
+                className={`hover:bg-red-50 hover:text-red-600 ${
+                  cardScores[currentCard._id] === "bad"
+                    ? "bg-red-50 text-red-600"
+                    : ""
+                }`}
+              >
                 <ThumbsDown className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="text-green-500">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleScore("good")}
+                className={`hover:bg-green-50 hover:text-green-600 ${
+                  cardScores[currentCard._id] === "good"
+                    ? "bg-green-50 text-green-600"
+                    : ""
+                }`}
+              >
                 <ThumbsUp className="h-4 w-4" />
               </Button>
             </div>
@@ -252,8 +311,71 @@ export default function StudyClient({ deckId }: Props) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Progress Stats */}
+          <div className="mt-8 flex justify-center gap-8 text-sm text-[var(--text-secondary)]">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span>
+                Good:{" "}
+                {Object.values(cardScores).filter((s) => s === "good").length}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <span>
+                Need Review:{" "}
+                {Object.values(cardScores).filter((s) => s === "bad").length}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[var(--neutral-300)]" />
+              <span>
+                Remaining: {deck.cards.length - Object.keys(cardScores).length}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      <Modal
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+        title="Keyboard Shortcuts"
+        description={
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Flip Card</span>
+              <kbd className="px-2 py-1 bg-[var(--neutral-100)] rounded">
+                Space
+              </kbd>
+            </div>
+            <div className="flex justify-between">
+              <span>Next Card</span>
+              <kbd className="px-2 py-1 bg-[var(--neutral-100)] rounded">
+                → or N
+              </kbd>
+            </div>
+            <div className="flex justify-between">
+              <span>Previous Card</span>
+              <kbd className="px-2 py-1 bg-[var(--neutral-100)] rounded">
+                ← or P
+              </kbd>
+            </div>
+            <div className="flex justify-between">
+              <span>Mark as Good</span>
+              <kbd className="px-2 py-1 bg-[var(--neutral-100)] rounded">G</kbd>
+            </div>
+            <div className="flex justify-between">
+              <span>Mark for Review</span>
+              <kbd className="px-2 py-1 bg-[var(--neutral-100)] rounded">B</kbd>
+            </div>
+          </div>
+        }
+        confirmText="Got it"
+        onConfirm={() => setShowKeyboardShortcuts(false)}
+      />
 
       {/* Exit Modal */}
       <Modal
@@ -262,6 +384,60 @@ export default function StudyClient({ deckId }: Props) {
         title="Exit Study Session"
         description="Are you sure you want to exit? Your progress will not be saved."
         confirmText="Exit"
+        onConfirm={() => router.push(`/decks/${deckId}`)}
+      />
+
+      {/* Completion Modal */}
+      <Modal
+        isOpen={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        title="Session Complete!"
+        description={
+          <div className="space-y-4">
+            <p>Great job! Here&apos;s your session summary:</p>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {Object.values(cardScores).filter((s) => s === "good").length}
+                </div>
+                <div className="text-sm text-[var(--text-secondary)]">
+                  Mastered
+                </div>
+              </div>
+              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">
+                  {Object.values(cardScores).filter((s) => s === "bad").length}
+                </div>
+                <div className="text-sm text-[var(--text-secondary)]">
+                  Need Review
+                </div>
+              </div>
+              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
+                <div className="text-2xl font-bold text-[var(--primary)]">
+                  {elapsedTime}
+                </div>
+                <div className="text-sm text-[var(--text-secondary)]">
+                  Study Time
+                </div>
+              </div>
+              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
+                <div className="text-2xl font-bold text-[var(--primary)]">
+                  {Math.round(
+                    (Object.values(cardScores).filter((s) => s === "good")
+                      .length /
+                      deck.cards.length) *
+                      100
+                  )}
+                  %
+                </div>
+                <div className="text-sm text-[var(--text-secondary)]">
+                  Accuracy
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+        confirmText="Back to Deck"
         onConfirm={() => router.push(`/decks/${deckId}`)}
       />
     </div>

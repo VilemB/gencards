@@ -7,7 +7,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  description: string;
+  description: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
@@ -75,9 +75,9 @@ export function Modal({
                   </button>
                 </div>
 
-                <Dialog.Description className="text-[var(--text-secondary)] mb-6">
+                <div className="text-[var(--text-secondary)] mb-6">
                   {description}
-                </Dialog.Description>
+                </div>
 
                 <div className="flex justify-end gap-3">
                   <Button
