@@ -10,7 +10,8 @@ import {
   AlertTriangle,
   GripVertical,
   Eye,
-  EyeOff,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   DropResult,
 } from "@hello-pangea/dnd";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Card {
   _id: string;
@@ -64,9 +66,9 @@ export default function EditDeckClient({ deckId }: Props) {
   const [error, setError] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [currentPreviewCard, setCurrentPreviewCard] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -183,23 +185,23 @@ export default function EditDeckClient({ deckId }: Props) {
     }
   };
 
-  const togglePreview = () => {
-    setShowPreview(!showPreview);
-    setCurrentPreviewCard(0);
-    setIsFlipped(false);
+  const handlePreviewClose = () => {
+    setIsPreviewMode(false);
+    setCurrentPreviewIndex(0);
+    setIsCardFlipped(false);
   };
 
   const nextPreviewCard = () => {
-    if (currentPreviewCard < cards.length - 1) {
-      setCurrentPreviewCard(currentPreviewCard + 1);
-      setIsFlipped(false);
+    if (currentPreviewIndex < cards.length - 1) {
+      setCurrentPreviewIndex(currentPreviewIndex + 1);
+      setIsCardFlipped(false);
     }
   };
 
   const previousPreviewCard = () => {
-    if (currentPreviewCard > 0) {
-      setCurrentPreviewCard(currentPreviewCard - 1);
-      setIsFlipped(false);
+    if (currentPreviewIndex > 0) {
+      setCurrentPreviewIndex(currentPreviewIndex - 1);
+      setIsCardFlipped(false);
     }
   };
 
@@ -230,72 +232,100 @@ export default function EditDeckClient({ deckId }: Props) {
     return null;
   }
 
-  if (showPreview) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-              Preview Cards
-            </h1>
-            <Button onClick={togglePreview} variant="outline" className="gap-2">
-              <EyeOff className="h-4 w-4" />
-              Exit Preview
-            </Button>
-          </div>
+  if (isPreviewMode) {
+    const currentCard = cards[currentPreviewIndex];
+    const progress = ((currentPreviewIndex + 1) / cards.length) * 100;
 
-          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+    return (
+      <div className="fixed inset-0 z-50 bg-[var(--background)]">
+        {/* Header */}
+        <header className="border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/80 backdrop-blur-sm sticky top-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="h-16 flex items-center justify-between gap-4">
+              <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+                Preview Cards
+              </h1>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handlePreviewClose}
+              >
+                <X className="h-4 w-4" />
+                Exit Preview
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Progress Bar */}
+        <div className="h-1 bg-[var(--neutral-100)]">
+          <motion.div
+            className="h-full bg-[var(--primary)]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+
+        {/* Card Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-transparent to-[var(--neutral-50)]/20 min-h-[calc(100vh-4.25rem)]">
+          <div className="w-full max-w-3xl">
+            {/* Card */}
             <div
-              className={`relative w-full max-w-2xl aspect-[3/2] cursor-pointer transition-transform duration-700 transform-gpu ${
-                isFlipped ? "rotate-y-180" : ""
-              }`}
-              onClick={() => setIsFlipped(!isFlipped)}
+              className="relative w-full aspect-[3/2] cursor-pointer perspective-1000"
+              onClick={() => setIsCardFlipped(!isCardFlipped)}
             >
-              <div
-                className={`absolute inset-0 backface-hidden bg-[var(--neutral-50)] rounded-xl p-8 flex flex-col ${
-                  isFlipped ? "rotate-y-180 invisible" : ""
-                }`}
-              >
-                <div className="flex-1 flex items-center justify-center">
-                  <div
-                    className="prose prose-neutral max-w-none w-full"
-                    dangerouslySetInnerHTML={{
-                      __html: cards[currentPreviewCard]?.front || "",
-                    }}
-                  />
-                </div>
-              </div>
-              <div
-                className={`absolute inset-0 backface-hidden bg-[var(--neutral-50)] rounded-xl p-8 flex flex-col rotate-y-180 ${
-                  isFlipped ? "visible" : "invisible"
-                }`}
-              >
-                <div className="flex-1 flex items-center justify-center">
-                  <div
-                    className="prose prose-neutral max-w-none w-full"
-                    dangerouslySetInnerHTML={{
-                      __html: cards[currentPreviewCard]?.back || "",
-                    }}
-                  />
-                </div>
-              </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isCardFlipped ? "back" : "front"}
+                  initial={{ rotateY: isCardFlipped ? -180 : 0, opacity: 0 }}
+                  animate={{ rotateY: 0, opacity: 1 }}
+                  exit={{ rotateY: isCardFlipped ? 0 : 180, opacity: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="absolute inset-0 bg-white rounded-xl shadow-lg p-8 flex flex-col backface-hidden"
+                  style={{
+                    transformStyle: "preserve-3d",
+                  }}
+                >
+                  <div className="flex-1 flex items-center justify-center">
+                    <div
+                      className="prose prose-lg max-w-none w-full text-center"
+                      dangerouslySetInnerHTML={{
+                        __html: isCardFlipped
+                          ? currentCard.back
+                          : currentCard.front,
+                      }}
+                    />
+                  </div>
+                  <div className="text-center text-sm text-[var(--text-secondary)] mt-4">
+                    Click to flip
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
-            <div className="flex items-center gap-4 mt-8">
+            {/* Navigation Controls */}
+            <div className="flex items-center justify-between mt-8">
               <Button
+                variant="outline"
                 onClick={previousPreviewCard}
-                disabled={currentPreviewCard === 0}
+                disabled={currentPreviewIndex === 0}
+                className="gap-2"
               >
+                <ChevronLeft className="h-4 w-4" />
                 Previous
               </Button>
-              <span className="text-[var(--text-secondary)]">
-                {currentPreviewCard + 1} / {cards.length}
-              </span>
+              <div className="text-sm text-[var(--text-secondary)]">
+                {currentPreviewIndex + 1} / {cards.length}
+              </div>
               <Button
+                variant="outline"
                 onClick={nextPreviewCard}
-                disabled={currentPreviewCard === cards.length - 1}
+                disabled={currentPreviewIndex === cards.length - 1}
+                className="gap-2"
               >
                 Next
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -317,7 +347,7 @@ export default function EditDeckClient({ deckId }: Props) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={togglePreview}
+                onClick={() => setIsPreviewMode(true)}
                 className="gap-2"
               >
                 <Eye className="h-4 w-4" />
