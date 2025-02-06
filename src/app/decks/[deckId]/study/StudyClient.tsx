@@ -45,6 +45,7 @@ export default function StudyClient({ deckId }: Props) {
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [studyStartTime] = useState(new Date());
   const [elapsedTime, setElapsedTime] = useState("00:00");
+  const [isSessionComplete, setIsSessionComplete] = useState(false);
   const [cardScores, setCardScores] = useState<
     Record<string, "good" | "bad" | null>
   >({});
@@ -72,6 +73,8 @@ export default function StudyClient({ deckId }: Props) {
 
   // Update elapsed time every second
   useEffect(() => {
+    if (isSessionComplete) return; // Don't update if session is complete
+
     const timer = setInterval(() => {
       const now = new Date();
       const diff = Math.floor(
@@ -85,7 +88,7 @@ export default function StudyClient({ deckId }: Props) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [studyStartTime]);
+  }, [studyStartTime, isSessionComplete]);
 
   const handleNext = () => {
     if (currentCardIndex < (deck?.cards.length || 0) - 1) {
@@ -121,8 +124,19 @@ export default function StudyClient({ deckId }: Props) {
   };
 
   const handleCompletion = () => {
-    // Save progress to backend (to be implemented)
-    // For now, just show completion modal
+    // Stop the timer by setting session complete
+    setIsSessionComplete(true);
+
+    // Calculate final time
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - studyStartTime.getTime()) / 1000);
+    const minutes = Math.floor(diff / 60)
+      .toString()
+      .padStart(2, "0");
+    const seconds = (diff % 60).toString().padStart(2, "0");
+    setElapsedTime(`${minutes}:${seconds}`);
+
+    // Show completion modal
     setShowCompletionModal(true);
   };
 
@@ -391,53 +405,56 @@ export default function StudyClient({ deckId }: Props) {
       <Modal
         isOpen={showCompletionModal}
         onClose={() => setShowCompletionModal(false)}
-        title="Session Complete!"
+        title="Study Session Complete!"
         description={
           <div className="space-y-4">
-            <p>Great job! Here&apos;s your session summary:</p>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {Object.values(cardScores).filter((s) => s === "good").length}
-                </div>
-                <div className="text-sm text-[var(--text-secondary)]">
-                  Mastered
-                </div>
-              </div>
-              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">
-                  {Object.values(cardScores).filter((s) => s === "bad").length}
-                </div>
-                <div className="text-sm text-[var(--text-secondary)]">
-                  Need Review
-                </div>
-              </div>
-              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
-                <div className="text-2xl font-bold text-[var(--primary)]">
+            <p>
+              Great job! You&apos;ve completed studying all cards in this deck.
+            </p>
+            <div className="grid grid-cols-2 gap-4 bg-[var(--neutral-50)] p-4 rounded-lg">
+              <div>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Total Time
+                </p>
+                <p className="text-2xl font-semibold text-[var(--text-primary)]">
                   {elapsedTime}
-                </div>
-                <div className="text-sm text-[var(--text-secondary)]">
-                  Study Time
-                </div>
+                </p>
               </div>
-              <div className="bg-[var(--neutral-50)] p-4 rounded-lg">
-                <div className="text-2xl font-bold text-[var(--primary)]">
-                  {Math.round(
-                    (Object.values(cardScores).filter((s) => s === "good")
-                      .length /
-                      deck.cards.length) *
-                      100
-                  )}
-                  %
-                </div>
-                <div className="text-sm text-[var(--text-secondary)]">
-                  Accuracy
-                </div>
+              <div>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Cards Studied
+                </p>
+                <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                  {deck.cards.length}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Good Cards
+                </p>
+                <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                  {
+                    Object.values(cardScores).filter(
+                      (score) => score === "good"
+                    ).length
+                  }
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Need Review
+                </p>
+                <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                  {
+                    Object.values(cardScores).filter((score) => score === "bad")
+                      .length
+                  }
+                </p>
               </div>
             </div>
           </div>
         }
-        confirmText="Back to Deck"
+        confirmText="Return to Deck"
         onConfirm={() => router.push(`/decks/${deckId}`)}
       />
     </div>
