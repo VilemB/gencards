@@ -15,6 +15,7 @@ import {
   User,
   Mail,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -409,7 +410,7 @@ export default function SettingsPage() {
           <section className="border-t border-[var(--neutral-200)] pt-8">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-red-600 font-medium flex items-center gap-2">
+                <h3 className="text-red-600/90 font-medium flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
                   Delete Account
                 </h3>
@@ -419,12 +420,12 @@ export default function SettingsPage() {
               </div>
               <Button
                 type="button"
-                variant="destructive"
+                variant="outline"
                 onClick={() => setShowDeleteModal(true)}
                 disabled={isSaving}
-                className="gap-2"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 mr-2" />
                 Delete Account
               </Button>
             </div>
@@ -438,9 +439,17 @@ export default function SettingsPage() {
           )}
 
           <div className="flex justify-end border-t border-[var(--neutral-200)] pt-8">
-            <Button type="submit" disabled={isSaving} className="min-w-[200px]">
+            <Button
+              type="submit"
+              disabled={isSaving}
+              size="lg"
+              className="min-w-[160px] relative"
+            >
               {isSaving ? (
-                <LoadingState title="Saving..." message="Please wait" />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Saving...
+                </>
               ) : (
                 "Save Changes"
               )}
