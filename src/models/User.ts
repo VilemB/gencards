@@ -16,6 +16,8 @@ export interface IUser extends mongoose.Document {
     cardsPerDay: number;
     theme: "light" | "dark" | "system";
   };
+  streak: number;
+  lastStudyDate: Date | null;
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -43,6 +45,14 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     emailVerified: {
       type: Date,
+    },
+    streak: {
+      type: Number,
+      default: 0,
+    },
+    lastStudyDate: {
+      type: Date,
+      default: null,
     },
     preferences: {
       type: Object,

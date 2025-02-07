@@ -24,6 +24,8 @@ interface UserPreferences {
 interface UserData {
   name: string;
   email: string;
+  streak: number;
+  lastStudyDate: string | null;
   preferences?: UserPreferences;
 }
 
@@ -131,9 +133,14 @@ export default function DashboardPage() {
                   Study Streak
                 </h2>
               </div>
-              <p className="text-3xl font-bold text-[var(--text-primary)]">
-                0 days
-              </p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold text-[var(--text-primary)]">
+                  {userData?.streak || 0}
+                </p>
+                <p className="text-[var(--text-secondary)]">
+                  {userData?.streak === 1 ? "day" : "days"}
+                </p>
+              </div>
             </div>
           )}
         </div>

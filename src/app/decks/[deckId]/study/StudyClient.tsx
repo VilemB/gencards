@@ -123,7 +123,7 @@ export default function StudyClient({ deckId }: Props) {
     setTimeout(handleNext, 300);
   };
 
-  const handleCompletion = () => {
+  const handleCompletion = async () => {
     // Stop the timer by setting session complete
     setIsSessionComplete(true);
 
@@ -135,6 +135,25 @@ export default function StudyClient({ deckId }: Props) {
       .padStart(2, "0");
     const seconds = (diff % 60).toString().padStart(2, "0");
     setElapsedTime(`${minutes}:${seconds}`);
+
+    try {
+      // Update user's study streak
+      const response = await fetch("/api/user/streak", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          studyDate: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to update study streak");
+      }
+    } catch (error) {
+      console.error("Error updating study streak:", error);
+    }
 
     // Show completion modal
     setShowCompletionModal(true);

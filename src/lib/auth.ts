@@ -11,6 +11,8 @@ interface UserData {
   name: string;
   email: string;
   image?: string;
+  streak: number;
+  lastStudyDate: Date | null;
   preferences?: {
     dailyReminder: boolean;
     showStreak: boolean;
@@ -33,6 +35,8 @@ export async function getUserById(userId: string): Promise<UserData | null> {
       name: user.name,
       email: user.email,
       image: user.image,
+      streak: user.streak || 0,
+      lastStudyDate: user.lastStudyDate || null,
       preferences: user.preferences,
     };
   } catch (error) {
