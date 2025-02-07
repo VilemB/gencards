@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Book, Trophy, Flame } from "lucide-react";
+import { Loader2, Plus, Book, Trophy, Flame, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -76,18 +76,42 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-            Welcome back, {userData?.name || session?.user?.name}!
-          </h1>
-          <Button asChild>
-            <Link href="/decks/create" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Deck
-            </Link>
-          </Button>
+        {/* Welcome Header with Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] p-8 mb-8 text-white">
+          <div className="relative z-10">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">
+                  Welcome back, {userData?.name || session?.user?.name}!
+                </h1>
+                <p className="text-white/80">
+                  Ready to continue your learning journey?
+                </p>
+              </div>
+              <Button
+                asChild
+                className="bg-white text-[var(--primary)] hover:bg-white/90"
+              >
+                <Link href="/decks/create" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Deck
+                </Link>
+              </Button>
+            </div>
+          </div>
+          {/* Decorative background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                backgroundSize: "30px 30px",
+              }}
+            />
+          </div>
         </div>
 
+        {/* Stats Grid */}
         <div
           className={`grid gap-6 ${
             userData?.preferences?.showStreak
@@ -95,38 +119,41 @@ export default function DashboardPage() {
               : "md:grid-cols-2"
           } mb-8`}
         >
-          {/* Quick Stats */}
-          <div className="card">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+          {/* Total Decks */}
+          <div className="group relative overflow-hidden bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-[var(--primary-light)] rounded-lg">
                 <Book className="h-5 w-5 text-[var(--primary)]" />
               </div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                 Total Decks
               </h2>
             </div>
-            <p className="text-3xl font-bold text-[var(--text-primary)]">
+            <p className="text-4xl font-bold text-[var(--text-primary)]">
               {totalDecks}
             </p>
+            <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
           </div>
 
-          <div className="card">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+          {/* Cards Mastered */}
+          <div className="group relative overflow-hidden bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-[var(--primary-light)] rounded-lg">
                 <Trophy className="h-5 w-5 text-[var(--primary)]" />
               </div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                 Cards Mastered
               </h2>
             </div>
-            <p className="text-3xl font-bold text-[var(--text-primary)]">0</p>
+            <p className="text-4xl font-bold text-[var(--text-primary)]">0</p>
+            <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
           </div>
 
-          {/* Only show streak if user has explicitly enabled it */}
+          {/* Study Streak */}
           {userData?.preferences?.showStreak && (
-            <div className="card">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+            <div className="group relative overflow-hidden bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-[var(--primary-light)] rounded-lg">
                   <Flame className="h-5 w-5 text-[var(--primary)]" />
                 </div>
                 <h2 className="text-lg font-semibold text-[var(--text-primary)]">
@@ -134,25 +161,29 @@ export default function DashboardPage() {
                 </h2>
               </div>
               <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-bold text-[var(--text-primary)]">
+                <p className="text-4xl font-bold text-[var(--text-primary)]">
                   {userData?.streak || 0}
                 </p>
                 <p className="text-[var(--text-secondary)]">
                   {userData?.streak === 1 ? "day" : "days"}
                 </p>
               </div>
+              <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
             </div>
           )}
         </div>
 
         {/* Recent Decks */}
-        <div className="card">
+        <div className="bg-[var(--neutral-50)] rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-[var(--text-primary)]">
               Recent Decks
             </h2>
-            <Button variant="ghost" asChild>
-              <Link href="/decks">View All</Link>
+            <Button variant="ghost" asChild className="gap-2">
+              <Link href="/decks">
+                View All
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
           </div>
 
@@ -162,26 +193,27 @@ export default function DashboardPage() {
                 <Link
                   key={deck._id}
                   href={`/decks/${deck._id}`}
-                  className="block bg-[var(--neutral-50)] rounded-lg p-4 hover:bg-[var(--neutral-100)] transition-colors"
+                  className="group relative overflow-hidden bg-[var(--background)] rounded-lg p-6 hover:bg-[var(--neutral-100)] transition-all duration-200"
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium text-[var(--text-primary)]">
+                      <h3 className="font-medium text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
                         {deck.title}
                       </h3>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        {deck.description || "No description"}
+                      <p className="text-sm text-[var(--text-secondary)] mt-1">
+                        {deck.description}
                       </p>
                     </div>
                     <span className="text-sm text-[var(--text-secondary)]">
                       {deck.cardCount} cards
                     </span>
                   </div>
+                  <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
+            <div className="text-center py-12">
               <p className="text-[var(--text-secondary)] mb-4">
                 You haven&apos;t created any decks yet
               </p>

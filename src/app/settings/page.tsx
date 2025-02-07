@@ -5,18 +5,22 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   Settings,
-  Loader2,
   AlertTriangle,
   Bell,
-  Eye,
-  Palette,
+  Sun,
+  Moon,
+  Monitor,
+  Flame,
+  Hash,
+  User,
+  Mail,
   Trash2,
-  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Toast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 interface SettingsForm {
   name: string;
@@ -41,12 +45,22 @@ export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { setTheme } = useTheme();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState<SettingsForm | null>(null);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [form, setForm] = useState<SettingsForm>({
+    name: "",
+    email: "",
+    preferences: {
+      dailyReminder: false,
+      showStreak: true,
+      cardsPerDay: 20,
+      theme: "system",
+    },
+  });
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   useEffect(() => {
@@ -71,9 +85,11 @@ export default function SettingsPage() {
             if (data.preferences?.theme) {
               setTheme(data.preferences.theme);
             }
+            setLoading(false);
           }
         } catch (error) {
           console.error("Error loading user settings:", error);
+          setLoading(false);
         }
       }
     }
@@ -89,7 +105,7 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!form) return;
 
-    setIsLoading(true);
+    setIsSaving(true);
     setError("");
 
     try {
@@ -110,7 +126,7 @@ export default function SettingsPage() {
       console.error("Error updating settings:", err);
       setError("Failed to update settings. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -134,322 +150,334 @@ export default function SettingsPage() {
     }
   };
 
-  if (status === "loading" || !form) {
+  if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
-      </div>
+      <LoadingState
+        title="Loading Settings"
+        message="Please wait while we load your settings"
+      />
     );
   }
 
   if (!session) return null;
 
   return (
-    <>
-      <div className="min-h-screen bg-[var(--background)] py-8">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="space-y-6">
-            {/* Header */}
+    <div className="min-h-screen bg-[var(--background)] py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header with Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] p-8 mb-12 text-white">
+          <div className="relative z-10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                  <Settings className="h-6 w-6 text-[var(--primary)]" />
-                </div>
-                <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                  Settings
-                </h1>
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Settings</h1>
+                <p className="text-white/80">
+                  Customize your learning experience
+                </p>
+              </div>
+              <div className="p-3 bg-white/10 rounded-xl">
+                <Settings className="h-8 w-8" />
               </div>
             </div>
+          </div>
+          {/* Decorative background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                backgroundSize: "30px 30px",
+              }}
+            />
+          </div>
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Profile Section */}
-              <div className="bg-[var(--background)] border border-[var(--neutral-200)] rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    Profile
-                  </h2>
-                  <div className="flex-1 border-b border-[var(--neutral-200)]"></div>
-                </div>
+        <form onSubmit={handleSubmit} className="space-y-12">
+          {/* Profile Section */}
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <User className="h-5 w-5 text-[var(--primary)]" />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Profile
+              </h2>
+            </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="name"
-                      className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                    >
-                      Display Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm({ ...form, name: e.target.value })
-                      }
-                      className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                    >
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={form.email}
-                      className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--neutral-50)] px-3 py-2 text-[var(--text-secondary)] sm:text-sm cursor-not-allowed"
-                      disabled
-                    />
-                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      Email is managed through your authentication provider
-                    </p>
-                  </div>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-[var(--text-primary)] mb-2"
+                >
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  required
+                  disabled={isSaving}
+                />
               </div>
 
-              {/* Study Preferences */}
-              <div className="bg-[var(--background)] border border-[var(--neutral-200)] rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    Study Preferences
-                  </h2>
-                  <div className="flex-1 border-b border-[var(--neutral-200)]"></div>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-[var(--text-primary)] mb-2"
+                >
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
+                  <input
+                    type="email"
+                    id="email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm({ ...form, email: e.target.value })
+                    }
+                    className="w-full pl-12 pr-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                    required
+                    disabled={isSaving}
+                  />
                 </div>
+              </div>
+            </div>
+          </section>
 
-                <div className="space-y-6">
-                  <div>
-                    <label
-                      htmlFor="cardsPerDay"
-                      className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                    >
-                      Daily Study Goal
-                    </label>
-                    <select
-                      id="cardsPerDay"
-                      value={form.preferences.cardsPerDay}
+          {/* Preferences Section */}
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <Settings className="h-5 w-5 text-[var(--primary)]" />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Preferences
+              </h2>
+            </div>
+
+            <div className="space-y-6">
+              {/* Daily Reminder */}
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
+                  <Bell className="h-6 w-6 text-[var(--primary)]" />
+                </div>
+                <div className="flex-1">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.preferences.dailyReminder}
                       onChange={(e) =>
                         setForm({
                           ...form,
                           preferences: {
                             ...form.preferences,
-                            cardsPerDay: Number(e.target.value),
+                            dailyReminder: e.target.checked,
                           },
                         })
                       }
-                      className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
-                      disabled={isLoading}
-                    >
-                      {CARDS_PER_DAY_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      Set your daily study goal to maintain a steady learning
-                      pace
-                    </p>
-                  </div>
-
-                  {/* Toggles Section */}
-                  <div className="space-y-4">
-                    {/* Daily Reminder Toggle */}
-                    <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                          <Bell className="h-4 w-4 text-[var(--primary)]" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-[var(--text-primary)]">
-                            Daily Reminder
-                          </p>
-                          <p className="text-sm text-[var(--text-secondary)]">
-                            Get notified when it&apos;s time to study
-                          </p>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.preferences.dailyReminder}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              preferences: {
-                                ...form.preferences,
-                                dailyReminder: e.target.checked,
-                              },
-                            })
-                          }
-                          className="sr-only peer"
-                          disabled={isLoading}
-                        />
-                        <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
-                      </label>
-                    </div>
-
-                    {/* Show Streak Toggle */}
-                    <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                          <Eye className="h-4 w-4 text-[var(--primary)]" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-[var(--text-primary)]">
-                            Show Streak
-                          </p>
-                          <p className="text-sm text-[var(--text-secondary)]">
-                            Display your study streak on dashboard
-                          </p>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.preferences.showStreak}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              preferences: {
-                                ...form.preferences,
-                                showStreak: e.target.checked,
-                              },
-                            })
-                          }
-                          className="sr-only peer"
-                          disabled={isLoading}
-                        />
-                        <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--primary)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
-                      </label>
-                    </div>
-
-                    {/* Theme Selection */}
-                    <div className="flex items-center justify-between py-3 px-4 bg-[var(--neutral-50)] rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[var(--primary-light)] rounded-lg">
-                          <Palette className="h-4 w-4 text-[var(--primary)]" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-[var(--text-primary)]">
-                            Theme
-                          </p>
-                          <p className="text-sm text-[var(--text-secondary)]">
-                            Choose your preferred theme
-                          </p>
-                        </div>
-                      </div>
-                      <select
-                        value={form.preferences.theme}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            preferences: {
-                              ...form.preferences,
-                              theme: e.target.value as
-                                | "light"
-                                | "dark"
-                                | "system",
-                            },
-                          })
-                        }
-                        className="rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm transition-colors"
-                        disabled={isLoading}
-                      >
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="system">System</option>
-                      </select>
-                    </div>
-                  </div>
+                      className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                      disabled={isSaving}
+                    />
+                    <span className="font-medium text-[var(--text-primary)]">
+                      Daily Reminder
+                    </span>
+                  </label>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
+                    Receive daily reminders to study
+                  </p>
                 </div>
               </div>
 
-              {error && (
-                <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                  <p className="text-sm">{error}</p>
+              {/* Show Streak */}
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
+                  <Flame className="h-6 w-6 text-[var(--primary)]" />
                 </div>
-              )}
+                <div className="flex-1">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.preferences.showStreak}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          preferences: {
+                            ...form.preferences,
+                            showStreak: e.target.checked,
+                          },
+                        })
+                      }
+                      className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                      disabled={isSaving}
+                    />
+                    <span className="font-medium text-[var(--text-primary)]">
+                      Show Streak
+                    </span>
+                  </label>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
+                    Display your study streak on the dashboard
+                  </p>
+                </div>
+              </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-4 pt-4">
-                <Button
-                  type="submit"
-                  className="w-full transition-all"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Saving changes...</span>
-                    </div>
-                  ) : (
-                    "Save Changes"
+              {/* Cards Per Day */}
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
+                  <Hash className="h-6 w-6 text-[var(--primary)]" />
+                </div>
+                <div className="flex-1">
+                  <label
+                    htmlFor="cardsPerDay"
+                    className="block font-medium text-[var(--text-primary)] mb-1"
+                  >
+                    Cards Per Day
+                  </label>
+                  <select
+                    id="cardsPerDay"
+                    value={form.preferences.cardsPerDay}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        preferences: {
+                          ...form.preferences,
+                          cardsPerDay: parseInt(e.target.value),
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                    disabled={isSaving}
+                  >
+                    {CARDS_PER_DAY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
+                    Number of cards to study per day
+                  </p>
+                </div>
+              </div>
+
+              {/* Theme */}
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
+                  {form.preferences.theme === "light" && (
+                    <Sun className="h-6 w-6 text-[var(--primary)]" />
                   )}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full transition-all"
-                  onClick={() => setShowSignOutModal(true)}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="destructive"
-                  className="w-full transition-all"
-                  onClick={() => setShowDeleteModal(true)}
-                  disabled={isDeleting}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete Account</span>
-                  </div>
-                </Button>
+                  {form.preferences.theme === "dark" && (
+                    <Moon className="h-6 w-6 text-[var(--primary)]" />
+                  )}
+                  {form.preferences.theme === "system" && (
+                    <Monitor className="h-6 w-6 text-[var(--primary)]" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <label
+                    htmlFor="theme"
+                    className="block font-medium text-[var(--text-primary)] mb-1"
+                  >
+                    Theme
+                  </label>
+                  <select
+                    id="theme"
+                    value={form.preferences.theme}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        preferences: {
+                          ...form.preferences,
+                          theme: e.target.value as "light" | "dark" | "system",
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                    disabled={isSaving}
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
+                  </select>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
+                    Choose your preferred theme
+                  </p>
+                </div>
               </div>
-            </form>
+            </div>
+          </section>
+
+          {/* Delete Account Section */}
+          <section className="border-t border-[var(--neutral-200)] pt-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-red-600 font-medium flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Delete Account
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  Permanently delete your account and all associated data
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isSaving}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Account
+              </Button>
+            </div>
+          </section>
+
+          {error && (
+            <div className="flex items-center gap-2 text-[var(--error)] bg-red-50 px-4 py-3 rounded-lg">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end border-t border-[var(--neutral-200)] pt-8">
+            <Button type="submit" disabled={isSaving} className="min-w-[200px]">
+              {isSaving ? (
+                <LoadingState title="Saving..." message="Please wait" />
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
           </div>
-        </div>
-      </div>
+        </form>
 
-      {/* Success Toast */}
-      {showSuccessToast && (
-        <Toast
-          message="Settings saved successfully!"
-          onClose={() => setShowSuccessToast(false)}
+        {/* Success Toast */}
+        {showSuccessToast && (
+          <Toast
+            message="Settings saved successfully!"
+            onClose={() => setShowSuccessToast(false)}
+          />
+        )}
+
+        {/* Delete Account Modal */}
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title="Delete Account"
+          description="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted."
+          confirmText="Delete Account"
+          onConfirm={handleDeleteAccount}
+          isDestructive={true}
+          isLoading={isDeleting}
         />
-      )}
 
-      {/* Delete Account Modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Delete Account"
-        description="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted."
-        confirmText="Delete Account"
-        onConfirm={handleDeleteAccount}
-        isDestructive={true}
-        isLoading={isDeleting}
-      />
-
-      {/* Sign Out Modal */}
-      <Modal
-        isOpen={showSignOutModal}
-        onClose={() => setShowSignOutModal(false)}
-        title="Sign Out"
-        description="Are you sure you want to sign out?"
-        confirmText="Sign Out"
-        onConfirm={() => signOut()}
-      />
-    </>
+        {/* Sign Out Modal */}
+        <Modal
+          isOpen={showSignOutModal}
+          onClose={() => setShowSignOutModal(false)}
+          title="Sign Out"
+          description="Are you sure you want to sign out?"
+          confirmText="Sign Out"
+          onConfirm={() => signOut()}
+        />
+      </div>
+    </div>
   );
 }
