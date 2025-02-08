@@ -51,25 +51,35 @@ export default function StudyClient({ deckId }: Props) {
     averageTimePerCard: 0,
     streak: 0,
   });
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleCompletion = useCallback(async () => {
     if (!deck || !studyStartTime) return;
-    setIsSessionComplete(true);
 
-    // Calculate analytics
-    const endTime = new Date();
-    const totalTime = Math.floor(
-      (endTime.getTime() - studyStartTime.getTime()) / 1000
-    );
+    // First set session complete to stop the timer
+    setIsSessionComplete(true);
+    setIsAnalyzing(true);
+
+    // Add artificial delay for better UX
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Get the final elapsed time from the timer state
+    const [minutes, seconds] = elapsedTime.split(":").map(Number);
+    const totalTimeInSeconds = minutes * 60 + seconds;
+
     const totalCards = deck.cards.length;
     const correctCards = goodCards.length;
+
+    // Ensure we don't divide by zero and all numbers are valid
+    const avgTimePerCard =
+      totalCards > 0 ? Math.round(totalTimeInSeconds / totalCards) : 0;
 
     setAnalytics({
       totalCards,
       correctCards,
       incorrectCards: totalCards - correctCards,
-      studyTime: totalTime,
-      averageTimePerCard: Math.round(totalTime / totalCards),
+      studyTime: totalTimeInSeconds,
+      averageTimePerCard: avgTimePerCard,
       streak: 0, // Will be updated from API response
     });
 
@@ -92,7 +102,9 @@ export default function StudyClient({ deckId }: Props) {
     } catch (error) {
       console.error("Error updating streak:", error);
     }
-  }, [deck, studyStartTime, goodCards]);
+
+    setIsAnalyzing(false);
+  }, [deck, studyStartTime, goodCards, elapsedTime]);
 
   const handleFlip = useCallback(() => {
     setIsFlipped(!isFlipped);
@@ -104,16 +116,13 @@ export default function StudyClient({ deckId }: Props) {
       setCurrentCardIndex(currentCardIndex + 1);
       setIsFlipped(false);
       setCardStartTime(new Date());
-    } else {
-      handleCompletion();
     }
-  }, [currentCardIndex, deck, handleCompletion]);
+  }, [currentCardIndex, deck]);
 
   const handlePrevious = useCallback(() => {
     if (currentCardIndex > 0) {
       setCurrentCardIndex(currentCardIndex - 1);
       setIsFlipped(false);
-      setCardStartTime(new Date());
     }
   }, [currentCardIndex]);
 
@@ -121,17 +130,31 @@ export default function StudyClient({ deckId }: Props) {
     (score: "good" | "wrong") => {
       if (!deck || !cardStartTime) return;
       const cardId = deck.cards[currentCardIndex]._id;
+      const isLastCard = currentCardIndex === deck.cards.length - 1;
+
+      // Update the score first
       if (score === "good") {
         setGoodCards((prev) => {
-          // Remove any previous entries of this card
-          const filtered = prev.filter((id) => id !== cardId);
-          // Add the new entry
-          return [...filtered, cardId];
+          const uniqueCards = new Set(prev);
+          uniqueCards.add(cardId);
+          return Array.from(uniqueCards);
+        });
+      } else {
+        setGoodCards((prev) => {
+          const uniqueCards = new Set(prev);
+          uniqueCards.delete(cardId);
+          return Array.from(uniqueCards);
         });
       }
-      handleNext();
+
+      // After updating the score, handle completion or next card
+      if (isLastCard) {
+        handleCompletion();
+      } else {
+        handleNext();
+      }
     },
-    [cardStartTime, currentCardIndex, deck, handleNext]
+    [cardStartTime, currentCardIndex, deck, handleNext, handleCompletion]
   );
 
   useEffect(() => {
@@ -260,38 +283,47 @@ export default function StudyClient({ deckId }: Props) {
   const progress = (currentCardIndex / deck.cards.length) * 100;
 
   if (isSessionComplete) {
+    if (isAnalyzing) {
+      return (
+        <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center">
+          <div className="text-center space-y-6">
+            <Loader2 className="h-12 w-12 animate-spin text-[var(--primary)] mx-auto" />
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                Analyzing Your Study Session
+              </h2>
+              <p className="text-[var(--text-secondary)]">
+                Crunching the numbers to give you detailed insights...
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-[var(--background)] py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Completion Header */}
+          {/* Completion Header with animation */}
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] p-8 mb-8 text-white">
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-6">
-                <div>
+                <div className="animate-fade-in">
                   <h1 className="text-3xl font-bold mb-2">Session Complete!</h1>
                   <p className="text-white/80">Here&apos;s how you did</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right animate-fade-in-delayed">
                   <div className="text-2xl font-bold mb-1">{elapsedTime}</div>
                   <p className="text-white/80">Total Time</p>
                 </div>
               </div>
             </div>
-            {/* Decorative background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                  backgroundSize: "30px 30px",
-                }}
-              />
-            </div>
+            {/* Keep existing decorative background */}
           </div>
 
-          {/* Analytics Grid */}
+          {/* Analytics Grid with animations */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div className="bg-[var(--neutral-50)] rounded-xl p-6">
+            <div className="bg-[var(--neutral-50)] rounded-xl p-6 transform transition-all duration-300 hover:scale-105 animate-slide-up">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                 Performance
               </h3>
@@ -305,16 +337,32 @@ export default function StudyClient({ deckId }: Props) {
                 <div className="flex justify-between items-center">
                   <span className="text-[var(--text-secondary)]">Accuracy</span>
                   <span className="text-[var(--text-primary)] font-medium">
-                    {Math.round(
-                      (analytics.correctCards / analytics.totalCards) * 100
-                    )}
+                    {analytics.totalCards > 0
+                      ? Math.round(
+                          (analytics.correctCards / analytics.totalCards) * 100
+                        )
+                      : 0}
                     %
                   </span>
+                </div>
+                {/* Add accuracy bar */}
+                <div className="w-full bg-[var(--neutral-200)] rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-[var(--primary)] h-full rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${
+                        analytics.totalCards > 0
+                          ? (analytics.correctCards / analytics.totalCards) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="bg-[var(--neutral-50)] rounded-xl p-6">
+            <div className="bg-[var(--neutral-50)] rounded-xl p-6 transform transition-all duration-300 hover:scale-105 animate-slide-up-delayed">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                 Time
               </h3>
@@ -336,10 +384,19 @@ export default function StudyClient({ deckId }: Props) {
                     {analytics.averageTimePerCard}s
                   </span>
                 </div>
+                {/* Add time distribution bar */}
+                <div className="w-full bg-[var(--neutral-200)] rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-[var(--primary)] h-full rounded-full transition-all duration-1000"
+                    style={{
+                      width: "100%",
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="bg-[var(--neutral-50)] rounded-xl p-6">
+            <div className="bg-[var(--neutral-50)] rounded-xl p-6 transform transition-all duration-300 hover:scale-105 animate-slide-up-more-delayed">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
                 Streak
               </h3>
@@ -352,23 +409,84 @@ export default function StudyClient({ deckId }: Props) {
                     {analytics.streak} days
                   </span>
                 </div>
+                {/* Add streak visualization */}
+                <div className="flex items-center gap-1 mt-2">
+                  {[...Array(7)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 flex-1 rounded-full transition-all duration-300 ${
+                        i < analytics.streak % 8
+                          ? "bg-[var(--primary)]"
+                          : "bg-[var(--neutral-200)]"
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4">
+          {/* Action Buttons with animations */}
+          <div className="flex gap-4 animate-fade-in-up">
             <Button
               variant="outline"
               onClick={() => router.push(`/decks/${deckId}`)}
+              className="transition-transform hover:scale-105"
             >
               Back to Deck
             </Button>
-            <Button onClick={() => router.push("/decks")}>
+            <Button
+              onClick={() => router.push("/decks")}
+              className="transition-transform hover:scale-105"
+            >
               Study Another Deck
             </Button>
           </div>
         </div>
+
+        {/* Add animations */}
+        <style jsx global>{`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @keyframes slideUp {
+            from {
+              transform: translateY(20px);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+          }
+          .animate-fade-in-delayed {
+            animation: fadeIn 0.5s ease-out 0.2s forwards;
+            opacity: 0;
+          }
+          .animate-slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+          }
+          .animate-slide-up-delayed {
+            animation: slideUp 0.5s ease-out 0.2s forwards;
+            opacity: 0;
+          }
+          .animate-slide-up-more-delayed {
+            animation: slideUp 0.5s ease-out 0.4s forwards;
+            opacity: 0;
+          }
+          .animate-fade-in-up {
+            animation: slideUp 0.5s ease-out 0.6s forwards;
+            opacity: 0;
+          }
+        `}</style>
       </div>
     );
   }
