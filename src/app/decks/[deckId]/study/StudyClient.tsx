@@ -28,7 +28,9 @@ interface StudyAnalytics {
   incorrectCards: number;
   studyTime: number;
   averageTimePerCard: number;
+  accuracy: number;
   streak: number;
+  completedAt: Date;
 }
 
 export default function StudyClient({ deckId }: Props) {
@@ -49,7 +51,9 @@ export default function StudyClient({ deckId }: Props) {
     incorrectCards: 0,
     studyTime: 0,
     averageTimePerCard: 0,
+    accuracy: 0,
     streak: 0,
+    completedAt: new Date(),
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -69,19 +73,39 @@ export default function StudyClient({ deckId }: Props) {
 
     const totalCards = deck.cards.length;
     const correctCards = goodCards.length;
+    const incorrectCards = totalCards - correctCards;
+    const accuracy = (correctCards / totalCards) * 100;
 
-    // Ensure we don't divide by zero and all numbers are valid
-    const avgTimePerCard =
-      totalCards > 0 ? Math.round(totalTimeInSeconds / totalCards) : 0;
-
-    setAnalytics({
+    const analyticsData: StudyAnalytics = {
       totalCards,
       correctCards,
-      incorrectCards: totalCards - correctCards,
+      incorrectCards,
       studyTime: totalTimeInSeconds,
-      averageTimePerCard: avgTimePerCard,
+      averageTimePerCard:
+        totalCards > 0 ? Math.round(totalTimeInSeconds / totalCards) : 0,
+      accuracy,
       streak: 0, // Will be updated from API response
-    });
+      completedAt: new Date(),
+    };
+
+    setAnalytics(analyticsData);
+
+    // Save study analytics
+    try {
+      const analyticsResponse = await fetch(`/api/decks/${deckId}/study`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(analyticsData),
+      });
+
+      if (!analyticsResponse.ok) {
+        console.error("Failed to save study analytics");
+      }
+    } catch (error) {
+      console.error("Error saving study analytics:", error);
+    }
 
     // Update study streak
     try {
@@ -104,7 +128,7 @@ export default function StudyClient({ deckId }: Props) {
     }
 
     setIsAnalyzing(false);
-  }, [deck, studyStartTime, goodCards, elapsedTime]);
+  }, [deck, studyStartTime, goodCards, elapsedTime, deckId]);
 
   const handleFlip = useCallback(() => {
     setIsFlipped(!isFlipped);
@@ -336,29 +360,41 @@ export default function StudyClient({ deckId }: Props) {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[var(--text-secondary)]">Accuracy</span>
-                  <span className="text-[var(--text-primary)] font-medium">
-                    {analytics.totalCards > 0
-                      ? Math.round(
-                          (analytics.correctCards / analytics.totalCards) * 100
-                        )
-                      : 0}
-                    %
+                  <span
+                    className={`font-medium ${
+                      analytics.accuracy >= 80
+                        ? "text-green-500"
+                        : analytics.accuracy >= 60
+                        ? "text-yellow-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {analytics.accuracy.toFixed(1)}%
                   </span>
                 </div>
                 {/* Add accuracy bar */}
                 <div className="w-full bg-[var(--neutral-200)] rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-[var(--primary)] h-full rounded-full transition-all duration-1000"
+                    className={`h-full rounded-full transition-all duration-1000 ${
+                      analytics.accuracy >= 80
+                        ? "bg-green-500"
+                        : analytics.accuracy >= 60
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                    }`}
                     style={{
-                      width: `${
-                        analytics.totalCards > 0
-                          ? (analytics.correctCards / analytics.totalCards) *
-                            100
-                          : 0
-                      }%`,
+                      width: `${analytics.accuracy}%`,
                     }}
                   />
                 </div>
+                {/* Add performance message */}
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {analytics.accuracy >= 80
+                    ? "Excellent! Keep up the great work! 🌟"
+                    : analytics.accuracy >= 60
+                    ? "Good progress! Room for improvement. 💪"
+                    : "Keep practicing! You'll get better! 📚"}
+                </p>
               </div>
             </div>
 
