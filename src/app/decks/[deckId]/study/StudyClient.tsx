@@ -43,7 +43,6 @@ export default function StudyClient({ deckId }: Props) {
   const [elapsedTime, setElapsedTime] = useState("00:00");
   const [isSessionComplete, setIsSessionComplete] = useState(false);
   const [goodCards, setGoodCards] = useState<string[]>([]);
-  const [badCards, setBadCards] = useState<string[]>([]);
   const [analytics, setAnalytics] = useState<StudyAnalytics>({
     totalCards: 0,
     correctCards: 0,
@@ -64,12 +63,11 @@ export default function StudyClient({ deckId }: Props) {
     );
     const totalCards = deck.cards.length;
     const correctCards = goodCards.length;
-    const incorrectCards = badCards.length;
 
     setAnalytics({
       totalCards,
       correctCards,
-      incorrectCards,
+      incorrectCards: totalCards - correctCards,
       studyTime: totalTime,
       averageTimePerCard: Math.round(totalTime / totalCards),
       streak: 0, // Will be updated from API response
@@ -94,7 +92,7 @@ export default function StudyClient({ deckId }: Props) {
     } catch (error) {
       console.error("Error updating streak:", error);
     }
-  }, [deck, studyStartTime, goodCards, badCards]);
+  }, [deck, studyStartTime, goodCards]);
 
   const handleFlip = useCallback(() => {
     setIsFlipped(!isFlipped);
@@ -124,13 +122,16 @@ export default function StudyClient({ deckId }: Props) {
       if (!deck || !cardStartTime) return;
       const cardId = deck.cards[currentCardIndex]._id;
       if (score === "good") {
-        setGoodCards([...goodCards, cardId]);
-      } else {
-        setBadCards([...badCards, cardId]);
+        setGoodCards((prev) => {
+          // Remove any previous entries of this card
+          const filtered = prev.filter((id) => id !== cardId);
+          // Add the new entry
+          return [...filtered, cardId];
+        });
       }
       handleNext();
     },
-    [cardStartTime, currentCardIndex, deck, goodCards, badCards, handleNext]
+    [cardStartTime, currentCardIndex, deck, handleNext]
   );
 
   useEffect(() => {
@@ -255,7 +256,8 @@ export default function StudyClient({ deckId }: Props) {
   }
 
   const currentCard = deck.cards[currentCardIndex];
-  const progress = ((currentCardIndex + 1) / deck.cards.length) * 100;
+  // Fix progress calculation to start from 0%
+  const progress = (currentCardIndex / deck.cards.length) * 100;
 
   if (isSessionComplete) {
     return (
@@ -510,7 +512,7 @@ export default function StudyClient({ deckId }: Props) {
                   <span className="flex items-center gap-2">
                     Wrong
                     <kbd className="hidden group-hover:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
-                      2
+                      W
                     </kbd>
                   </span>
                 </Button>
@@ -520,8 +522,8 @@ export default function StudyClient({ deckId }: Props) {
                 >
                   <span className="flex items-center gap-2">
                     Good
-                    <kbd className="hidden group-hover:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
-                      1
+                    <kbd className="hidden group-hover:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded-lg">
+                      G
                     </kbd>
                   </span>
                 </Button>
@@ -556,13 +558,13 @@ export default function StudyClient({ deckId }: Props) {
               <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
                 <span>Mark as Good</span>
                 <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg">
-                  1
+                  G
                 </kbd>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
                 <span>Mark as Wrong</span>
                 <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg">
-                  2
+                  W
                 </kbd>
               </div>
             </div>
