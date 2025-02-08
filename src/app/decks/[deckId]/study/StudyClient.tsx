@@ -416,7 +416,7 @@ export default function StudyClient({ deckId }: Props) {
         <div className="space-y-8">
           <div
             onClick={handleFlip}
-            className="relative w-full aspect-[3/2] perspective-1000 cursor-pointer"
+            className="relative w-full aspect-[3/2] perspective-1000 cursor-pointer group"
           >
             <div
               className={`absolute inset-0 transition-transform duration-500 preserve-3d ${
@@ -425,44 +425,55 @@ export default function StudyClient({ deckId }: Props) {
             >
               {/* Front */}
               <div className="absolute inset-0 backface-hidden">
-                <div className="h-full flex items-center justify-center p-8 bg-[var(--neutral-50)] rounded-xl border border-[var(--neutral-200)] hover:bg-[var(--neutral-100)] transition-colors">
-                  <p className="text-xl text-[var(--text-primary)] text-center">
+                <div className="h-full flex flex-col items-center justify-center p-8 bg-[var(--neutral-50)] rounded-xl border border-[var(--neutral-200)] hover:bg-[var(--neutral-100)] transition-colors">
+                  <p className="text-2xl text-[var(--text-primary)] text-center">
                     {currentCard.front}
                   </p>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg text-[var(--text-secondary)]">
+                      space to flip
+                    </kbd>
+                  </div>
                 </div>
               </div>
 
               {/* Back */}
               <div className="absolute inset-0 rotate-y-180 backface-hidden">
-                <div className="h-full flex items-center justify-center p-8 bg-[var(--neutral-50)] rounded-xl border border-[var(--neutral-200)] hover:bg-[var(--neutral-100)] transition-colors">
-                  <p className="text-xl text-[var(--text-primary)] text-center">
+                <div className="h-full flex flex-col items-center justify-center p-8 bg-[var(--neutral-50)] rounded-xl border border-[var(--neutral-200)] hover:bg-[var(--neutral-100)] transition-colors">
+                  <p className="text-2xl text-[var(--text-primary)] text-center">
                     {currentCard.back}
                   </p>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg text-[var(--text-secondary)]">
+                      space to flip
+                    </kbd>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-between gap-4">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentCardIndex === 0}
-              className="w-[120px] group relative"
-            >
-              <span className="flex items-center gap-2">
-                ← Previous
-                <kbd className="hidden group-hover:inline-block absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
-                  ←
-                </kbd>
-              </span>
-            </Button>
-            <div className="flex-1 flex justify-center">
+          <div className="flex flex-col items-center gap-6">
+            {/* Navigation Controls */}
+            <div className="flex items-center justify-between w-full max-w-2xl">
+              <Button
+                variant="ghost"
+                onClick={handlePrevious}
+                disabled={currentCardIndex === 0}
+                className="group relative px-6"
+              >
+                <span className="flex items-center gap-2">
+                  ← Previous
+                  <kbd className="hidden group-hover:inline-block absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+                    ←
+                  </kbd>
+                </span>
+              </Button>
               <Button
                 variant="ghost"
                 onClick={handleFlip}
-                className="group relative"
+                className="group relative px-6"
               >
                 <span className="flex items-center gap-2">
                   {isFlipped ? "Show Front" : "Show Back"}
@@ -471,85 +482,88 @@ export default function StudyClient({ deckId }: Props) {
                   </kbd>
                 </span>
               </Button>
+              {!isFlipped && (
+                <Button
+                  variant="ghost"
+                  onClick={handleNext}
+                  disabled={currentCardIndex === deck.cards.length - 1}
+                  className="group relative px-6"
+                >
+                  <span className="flex items-center gap-2">
+                    Next →
+                    <kbd className="hidden group-hover:inline-block absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+                      →
+                    </kbd>
+                  </span>
+                </Button>
+              )}
             </div>
-            {isFlipped ? (
-              <div className="flex gap-2">
+
+            {/* Scoring Controls */}
+            {isFlipped && (
+              <div className="flex gap-4">
                 <Button
                   variant="outline"
                   onClick={() => handleScore("wrong")}
-                  className="w-[120px] group relative"
+                  className="w-[160px] h-12 group relative hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                 >
                   <span className="flex items-center gap-2">
                     Wrong
-                    <kbd className="hidden group-hover:inline-block absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+                    <kbd className="hidden group-hover:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
                       2
                     </kbd>
                   </span>
                 </Button>
                 <Button
                   onClick={() => handleScore("good")}
-                  className="w-[120px] group relative"
+                  className="w-[160px] h-12 group relative hover:bg-green-600"
                 >
                   <span className="flex items-center gap-2">
                     Good
-                    <kbd className="hidden group-hover:inline-block absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+                    <kbd className="hidden group-hover:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
                       1
                     </kbd>
                   </span>
                 </Button>
               </div>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={handleNext}
-                disabled={currentCardIndex === deck.cards.length - 1}
-                className="w-[120px] group relative"
-              >
-                <span className="flex items-center gap-2">
-                  Next →
-                  <kbd className="hidden group-hover:inline-block absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
-                    →
-                  </kbd>
-                </span>
-              </Button>
             )}
           </div>
 
           {/* Keyboard Shortcuts Help */}
-          <div className="text-center space-y-2 text-sm text-[var(--text-secondary)] bg-[var(--neutral-50)] rounded-lg p-4 mt-8">
-            <p className="font-medium text-[var(--text-primary)]">
+          <div className="text-center space-y-3 text-sm text-[var(--text-secondary)] bg-[var(--neutral-50)] rounded-xl p-6 mt-8 max-w-2xl mx-auto">
+            <p className="font-medium text-[var(--text-primary)] mb-4">
               Keyboard Shortcuts
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-              <div className="flex items-center justify-center gap-2">
-                <kbd className="px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                <span>Flip card</span>
+                <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg">
                   space
                 </kbd>
-                <span>Flip card</span>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                <kbd className="px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+              <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                <span>Previous card</span>
+                <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg">
                   ←
                 </kbd>
-                <span>Previous card</span>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                <kbd className="px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+              <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                <span>Next card</span>
+                <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg">
                   →
                 </kbd>
-                <span>Next card</span>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                <kbd className="px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+              <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                <span>Mark as Good</span>
+                <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg">
                   1
                 </kbd>
-                <span>Mark as Good</span>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                <kbd className="px-2 py-0.5 text-xs font-mono bg-[var(--neutral-100)] rounded">
+              <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--neutral-100)] transition-colors">
+                <span>Mark as Wrong</span>
+                <kbd className="px-3 py-1 text-sm font-mono bg-[var(--neutral-100)] rounded-lg">
                   2
                 </kbd>
-                <span>Mark as Wrong</span>
               </div>
             </div>
           </div>
