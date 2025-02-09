@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Filter, Play, Search, Users, Book, Star } from "lucide-react";
+import { Filter, Play, Search, Users, Book, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/useDebounce";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 interface Deck {
   _id: string;
@@ -84,9 +85,10 @@ export default function CommunityContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
-      </div>
+      <LoadingState
+        title="Loading Community Decks"
+        message="Please wait while we load the community flashcard decks"
+      />
     );
   }
 
@@ -159,9 +161,9 @@ export default function CommunityContent() {
         </div>
 
         {/* Search and Filters */}
-        <div className="space-y-6 mb-8">
-          {/* Search Bar */}
-          <div className="relative">
+        <div className="bg-[var(--neutral-50)] rounded-xl p-6 mb-8">
+          <div className="space-y-6">
+            {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
               <input
@@ -169,31 +171,36 @@ export default function CommunityContent() {
                 placeholder="Search decks by title or description..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               />
             </div>
-          </div>
 
-          {/* Topic Filter */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={!currentTopic ? "default" : "outline"}
-              onClick={() => handleTopicChange(null)}
-              className="rounded-lg gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              All Topics
-            </Button>
-            {topics.map((topic) => (
-              <Button
-                key={topic}
-                variant={currentTopic === topic ? "default" : "outline"}
-                onClick={() => handleTopicChange(topic)}
-                className="rounded-lg"
-              >
-                {topic}
-              </Button>
-            ))}
+            {/* Topic Filter */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-[var(--text-secondary)]">
+                Filter by Topic
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={!currentTopic ? "default" : "outline"}
+                  onClick={() => handleTopicChange(null)}
+                  className="gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  All Topics
+                </Button>
+                {topics.map((topic) => (
+                  <Button
+                    key={topic}
+                    variant={currentTopic === topic ? "default" : "outline"}
+                    onClick={() => handleTopicChange(topic)}
+                    className="rounded-lg"
+                  >
+                    {topic}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -208,7 +215,7 @@ export default function CommunityContent() {
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <Link
-                      href={`/decks/${deck._id}`}
+                      href={`/decks/${deck._id}/edit`}
                       className="flex-1 group/title"
                     >
                       <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover/title:text-[var(--primary)] transition-colors">
