@@ -57,78 +57,81 @@ export default function StudyClient({ deckId }: Props) {
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleCompletion = useCallback(async () => {
-    if (!deck || !studyStartTime) return;
+  const handleCompletion = useCallback(
+    async (finalGoodCount?: number) => {
+      if (!deck || !studyStartTime) return;
 
-    // First set session complete to stop the timer
-    setIsSessionComplete(true);
-    setIsAnalyzing(true);
+      // First set session complete to stop the timer
+      setIsSessionComplete(true);
+      setIsAnalyzing(true);
 
-    // Add artificial delay for better UX
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Add artificial delay for better UX
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Get the final elapsed time from the timer state
-    const [minutes, seconds] = elapsedTime.split(":").map(Number);
-    const totalTimeInSeconds = minutes * 60 + seconds;
+      // Get the final elapsed time from the timer state
+      const [minutes, seconds] = elapsedTime.split(":").map(Number);
+      const totalTimeInSeconds = minutes * 60 + seconds;
 
-    const totalCards = deck.cards.length;
-    const correctCards = goodCards.length;
-    const incorrectCards = totalCards - correctCards;
-    const accuracy = (correctCards / totalCards) * 100;
+      // Use passed count or fallback to state
+      const correctCards = finalGoodCount ?? goodCards.length;
+      const totalCards = deck.cards.length;
+      const accuracy = (correctCards / totalCards) * 100;
 
-    const analyticsData: StudyAnalytics = {
-      totalCards,
-      correctCards,
-      incorrectCards,
-      studyTime: totalTimeInSeconds,
-      averageTimePerCard:
-        totalCards > 0 ? Math.round(totalTimeInSeconds / totalCards) : 0,
-      accuracy,
-      streak: 0, // Will be updated from API response
-      completedAt: new Date(),
-    };
+      const analyticsData: StudyAnalytics = {
+        totalCards,
+        correctCards,
+        incorrectCards: totalCards - correctCards,
+        studyTime: totalTimeInSeconds,
+        averageTimePerCard:
+          totalCards > 0 ? Math.round(totalTimeInSeconds / totalCards) : 0,
+        accuracy,
+        streak: 0, // Will be updated from API response
+        completedAt: new Date(),
+      };
 
-    setAnalytics(analyticsData);
+      setAnalytics(analyticsData);
 
-    // Save study analytics
-    try {
-      const analyticsResponse = await fetch(`/api/decks/${deckId}/study`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(analyticsData),
-      });
+      // Save study analytics
+      try {
+        const analyticsResponse = await fetch(`/api/decks/${deckId}/study`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(analyticsData),
+        });
 
-      if (!analyticsResponse.ok) {
-        console.error("Failed to save study analytics");
+        if (!analyticsResponse.ok) {
+          console.error("Failed to save study analytics");
+        }
+      } catch (error) {
+        console.error("Error saving study analytics:", error);
       }
-    } catch (error) {
-      console.error("Error saving study analytics:", error);
-    }
 
-    // Update study streak
-    try {
-      const response = await fetch("/api/user/streak", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          studyDate: new Date().toISOString(),
-        }),
-      });
+      // Update study streak
+      try {
+        const response = await fetch("/api/user/streak", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            studyDate: new Date().toISOString(),
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        setAnalytics((prev) => ({ ...prev, streak: data.streak }));
+        if (response.ok) {
+          const data = await response.json();
+          setAnalytics((prev) => ({ ...prev, streak: data.streak }));
+        }
+      } catch (error) {
+        console.error("Error updating streak:", error);
       }
-    } catch (error) {
-      console.error("Error updating streak:", error);
-    }
 
-    setIsAnalyzing(false);
-  }, [deck, studyStartTime, goodCards, elapsedTime, deckId]);
+      setIsAnalyzing(false);
+    },
+    [deck, studyStartTime, goodCards, elapsedTime, deckId]
+  );
 
   const handleFlip = useCallback(() => {
     setIsFlipped(!isFlipped);
@@ -151,7 +154,7 @@ export default function StudyClient({ deckId }: Props) {
   }, [currentCardIndex]);
 
   const handleScore = useCallback(
-    (score: "good" | "wrong") => {
+    async (score: "good" | "wrong") => {
       if (!deck || !cardStartTime) return;
       const cardId = deck.cards[currentCardIndex]._id;
       const isLastCard = currentCardIndex === deck.cards.length - 1;
@@ -161,20 +164,28 @@ export default function StudyClient({ deckId }: Props) {
         setGoodCards((prev) => {
           const uniqueCards = new Set(prev);
           uniqueCards.add(cardId);
-          return Array.from(uniqueCards);
+          const newCards = Array.from(uniqueCards);
+          // Use the latest state value for completion
+          if (isLastCard) {
+            setTimeout(() => handleCompletion(newCards.length));
+          }
+          return newCards;
         });
       } else {
         setGoodCards((prev) => {
           const uniqueCards = new Set(prev);
           uniqueCards.delete(cardId);
-          return Array.from(uniqueCards);
+          const newCards = Array.from(uniqueCards);
+          // Use the latest state value for completion
+          if (isLastCard) {
+            setTimeout(() => handleCompletion(newCards.length));
+          }
+          return newCards;
         });
       }
 
-      // After updating the score, handle completion or next card
-      if (isLastCard) {
-        handleCompletion();
-      } else {
+      // If not the last card, proceed to next
+      if (!isLastCard) {
         handleNext();
       }
     },
