@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import CommunityContent from "./CommunityContent";
+import DecksContent from "../decks/DecksContent";
 
 export default function CommunityPage() {
   return (
@@ -11,7 +11,7 @@ export default function CommunityPage() {
         </div>
       }
     >
-      <CommunityContent />
+      <DecksContent mode="community" />
     </Suspense>
   );
 }

@@ -28,7 +28,11 @@ interface Deck {
   createdAt: string;
 }
 
-export default function DecksContent() {
+interface DecksContentProps {
+  mode?: "personal" | "community";
+}
+
+export default function DecksContent({ mode = "personal" }: DecksContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -48,17 +52,25 @@ export default function DecksContent() {
       try {
         const params = new URLSearchParams();
         if (currentTopic) params.set("topic", currentTopic);
-        if (currentOwnership !== "all")
+        if (currentOwnership !== "all" && mode === "personal")
           params.set("ownership", currentOwnership);
         if (debouncedSearch) params.set("search", debouncedSearch);
 
-        const url = `/api/decks${
-          params.toString() ? `?${params.toString()}` : ""
-        }`;
+        const url =
+          mode === "community"
+            ? `/api/decks/public${
+                params.toString() ? `?${params.toString()}` : ""
+              }`
+            : `/api/decks${params.toString() ? `?${params.toString()}` : ""}`;
+
         const response = await fetch(url);
 
         if (!response.ok) {
-          throw new Error("Failed to load decks");
+          throw new Error(
+            mode === "community"
+              ? "Failed to load community decks"
+              : "Failed to load decks"
+          );
         }
 
         const data = await response.json();
@@ -66,14 +78,18 @@ export default function DecksContent() {
         setTopics(data.topics);
       } catch (err) {
         console.error("Error loading decks:", err);
-        setError("Failed to load decks");
+        setError(
+          mode === "community"
+            ? "Failed to load community decks"
+            : "Failed to load decks"
+        );
       } finally {
         setIsLoading(false);
       }
     }
 
     loadDecks();
-  }, [currentTopic, currentOwnership, debouncedSearch]);
+  }, [currentTopic, currentOwnership, debouncedSearch, mode]);
 
   const handleTopicChange = (topic: string | null) => {
     const params = new URLSearchParams(searchParams);
@@ -82,7 +98,9 @@ export default function DecksContent() {
     } else {
       params.delete("topic");
     }
-    router.push(`/decks?${params.toString()}`);
+    router.push(
+      `${mode === "community" ? "/community" : "/decks"}?${params.toString()}`
+    );
   };
 
   const handleOwnershipChange = (ownership: string) => {
@@ -103,14 +121,22 @@ export default function DecksContent() {
     } else {
       params.delete("search");
     }
-    router.push(`/decks?${params.toString()}`);
+    router.push(
+      `${mode === "community" ? "/community" : "/decks"}?${params.toString()}`
+    );
   };
 
   if (isLoading) {
     return (
       <LoadingState
-        title="Loading Decks"
-        message="Please wait while we load your flashcard decks"
+        title={
+          mode === "community" ? "Loading Community Decks" : "Loading Decks"
+        }
+        message={
+          mode === "community"
+            ? "Please wait while we load the community flashcard decks"
+            : "Please wait while we load your flashcard decks"
+        }
       />
     );
   }
@@ -136,20 +162,30 @@ export default function DecksContent() {
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Your Decks</h1>
+                <h1 className="text-3xl font-bold mb-2">
+                  {mode === "community" ? "Community Decks" : "Your Decks"}
+                </h1>
                 <p className="text-white/80">
-                  Manage and study your flashcard collections
+                  {mode === "community"
+                    ? "Discover and learn from decks shared by the community"
+                    : "Manage and study your flashcard collections"}
                 </p>
               </div>
-              <Button
-                asChild
-                className="bg-white text-[var(--primary)] hover:bg-white/90"
-              >
-                <Link href="/decks/create" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Deck
-                </Link>
-              </Button>
+              {mode === "personal" ? (
+                <Button
+                  asChild
+                  className="bg-white text-[var(--primary)] hover:bg-white/90"
+                >
+                  <Link href="/decks/create" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Deck
+                  </Link>
+                </Button>
+              ) : (
+                <div className="p-3 bg-white/10 rounded-xl">
+                  <Users className="h-8 w-8" />
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white/10 rounded-lg p-4">
@@ -168,11 +204,19 @@ export default function DecksContent() {
               </div>
               <div className="bg-white/10 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <Clock className="h-5 w-5" />
-                  <h3 className="font-medium">Total Cards</h3>
+                  {mode === "community" ? (
+                    <Users className="h-5 w-5" />
+                  ) : (
+                    <Clock className="h-5 w-5" />
+                  )}
+                  <h3 className="font-medium">
+                    {mode === "community" ? "Contributors" : "Total Cards"}
+                  </h3>
                 </div>
                 <p className="text-2xl font-bold">
-                  {decks.reduce((sum, deck) => sum + deck.cardCount, 0)}
+                  {mode === "community"
+                    ? new Set(decks.map((deck) => deck.userId)).size
+                    : decks.reduce((sum, deck) => sum + deck.cardCount, 0)}
                 </p>
               </div>
             </div>
@@ -206,40 +250,46 @@ export default function DecksContent() {
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-6">
-              {/* Ownership Filter */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-[var(--text-secondary)]">
-                  Filter by Ownership
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={currentOwnership === "all" ? "default" : "outline"}
-                    onClick={() => handleOwnershipChange("all")}
-                    className="gap-2"
-                  >
-                    <Users className="h-4 w-4" />
-                    All Decks
-                  </Button>
-                  <Button
-                    variant={currentOwnership === "my" ? "default" : "outline"}
-                    onClick={() => handleOwnershipChange("my")}
-                    className="gap-2"
-                  >
-                    <User className="h-4 w-4" />
-                    By You
-                  </Button>
-                  <Button
-                    variant={
-                      currentOwnership === "others" ? "default" : "outline"
-                    }
-                    onClick={() => handleOwnershipChange("others")}
-                    className="gap-2"
-                  >
-                    <Users className="h-4 w-4" />
-                    By Others
-                  </Button>
+              {/* Ownership Filter - Only show in personal mode */}
+              {mode === "personal" && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-[var(--text-secondary)]">
+                    Filter by Ownership
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={
+                        currentOwnership === "all" ? "default" : "outline"
+                      }
+                      onClick={() => handleOwnershipChange("all")}
+                      className="gap-2"
+                    >
+                      <Users className="h-4 w-4" />
+                      All Decks
+                    </Button>
+                    <Button
+                      variant={
+                        currentOwnership === "my" ? "default" : "outline"
+                      }
+                      onClick={() => handleOwnershipChange("my")}
+                      className="gap-2"
+                    >
+                      <User className="h-4 w-4" />
+                      By You
+                    </Button>
+                    <Button
+                      variant={
+                        currentOwnership === "others" ? "default" : "outline"
+                      }
+                      onClick={() => handleOwnershipChange("others")}
+                      className="gap-2"
+                    >
+                      <Users className="h-4 w-4" />
+                      By Others
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Topic Filter */}
               <div className="space-y-2">
@@ -280,24 +330,23 @@ export default function DecksContent() {
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <Link href={`/decks/${deck._id}`} className="block">
-                        <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
-                          {deck.title}
-                        </h2>
-                        <p className="text-[var(--text-secondary)] mt-1 line-clamp-2">
-                          {deck.description}
-                        </p>
-                      </Link>
-                    </div>
-                    <div className="relative z-10">
-                      <Link
-                        href={`/decks/${deck._id}/study`}
-                        className="inline-flex items-center justify-center rounded-lg w-10 h-10 text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--neutral-200)] transition-colors"
-                      >
-                        <Play className="h-5 w-5" />
-                      </Link>
-                    </div>
+                    <Link
+                      href={`/decks/${deck._id}`}
+                      className="flex-1 group/title"
+                    >
+                      <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover/title:text-[var(--primary)] transition-colors">
+                        {deck.title}
+                      </h2>
+                      <p className="text-[var(--text-secondary)] mt-1 line-clamp-2">
+                        {deck.description}
+                      </p>
+                    </Link>
+                    <Link
+                      href={`/decks/${deck._id}/study`}
+                      className="inline-flex items-center justify-center rounded-lg w-8 h-8 text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--neutral-200)] transition-colors"
+                    >
+                      <Play className="h-4 w-4" />
+                    </Link>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
                     <span className="flex items-center gap-1">
@@ -323,27 +372,38 @@ export default function DecksContent() {
         ) : (
           <div className="text-center py-12 bg-[var(--neutral-50)] rounded-xl">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--primary-light)] text-[var(--primary)] mb-4">
-              <Book className="h-6 w-6" />
+              {mode === "community" ? (
+                <Users className="h-6 w-6" />
+              ) : (
+                <Book className="h-6 w-6" />
+              )}
             </div>
             <p className="text-[var(--text-secondary)] mb-4">
               {currentTopic
-                ? `No decks found for topic "${currentTopic}"`
+                ? `No ${
+                    mode === "community" ? "public " : ""
+                  }decks found for topic "${currentTopic}"`
                 : searchQuery
                 ? `No decks found matching "${searchQuery}"`
+                : mode === "community"
+                ? "No public decks found"
                 : currentOwnership === "my"
                 ? "You haven't created any decks yet"
                 : currentOwnership === "others"
                 ? "No decks from others found"
                 : "No decks found"}
             </p>
-            {currentOwnership === "my" && !searchQuery && !currentTopic && (
-              <Button asChild>
-                <Link href="/decks/create" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Your First Deck
-                </Link>
-              </Button>
-            )}
+            {mode === "personal" &&
+              currentOwnership === "my" &&
+              !searchQuery &&
+              !currentTopic && (
+                <Button asChild>
+                  <Link href="/decks/create" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Your First Deck
+                  </Link>
+                </Button>
+              )}
           </div>
         )}
       </div>
