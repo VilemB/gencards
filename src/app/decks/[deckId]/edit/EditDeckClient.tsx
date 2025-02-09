@@ -233,8 +233,15 @@ export default function EditDeckClient({ deckId }: Props) {
   }
 
   if (isPreviewMode) {
-    const currentCard = cards[currentPreviewIndex];
-    const progress = ((currentPreviewIndex + 1) / cards.length) * 100;
+    const currentCard =
+      cards.length > 0
+        ? cards[currentPreviewIndex]
+        : {
+            front: "<p>This is a test card front</p>",
+            back: "<p>This is a test card back</p>",
+          };
+    const progress =
+      cards.length > 0 ? ((currentPreviewIndex + 1) / cards.length) * 100 : 100;
 
     return (
       <div className="fixed inset-0 z-50 bg-[var(--background)]">
@@ -243,7 +250,7 @@ export default function EditDeckClient({ deckId }: Props) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="h-16 flex items-center justify-between gap-4">
               <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-                Preview Cards
+                {cards.length > 0 ? "Preview Cards" : "Preview Example Card"}
               </h1>
               <Button
                 variant="outline"
@@ -316,12 +323,16 @@ export default function EditDeckClient({ deckId }: Props) {
                 Previous
               </Button>
               <div className="text-sm text-[var(--text-secondary)]">
-                {currentPreviewIndex + 1} / {cards.length}
+                {cards.length > 0
+                  ? `${currentPreviewIndex + 1} / ${cards.length}`
+                  : "Example Card"}
               </div>
               <Button
                 variant="outline"
                 onClick={nextPreviewCard}
-                disabled={currentPreviewIndex === cards.length - 1}
+                disabled={
+                  cards.length === 0 || currentPreviewIndex === cards.length - 1
+                }
                 className="gap-2"
               >
                 Next
