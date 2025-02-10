@@ -25,6 +25,7 @@ import {
 } from "@hello-pangea/dnd";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import { motion, AnimatePresence } from "framer-motion";
+import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
 
 interface Card {
   _id: string;
@@ -70,6 +71,9 @@ export default function EditDeckClient({ deckId }: Props) {
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generationCount, setGenerationCount] = useState(5);
+  const [createNewDeck, setCreateNewDeck] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -214,6 +218,7 @@ export default function EditDeckClient({ deckId }: Props) {
 
     setIsGenerating(true);
     setError("");
+    setShowGenerateModal(false);
 
     try {
       const response = await fetch("/api/decks/generate", {
@@ -221,7 +226,11 @@ export default function EditDeckClient({ deckId }: Props) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic, count: 5 }),
+        body: JSON.stringify({
+          topic,
+          count: generationCount,
+          createNewDeck,
+        }),
       });
 
       if (!response.ok) {
@@ -229,10 +238,16 @@ export default function EditDeckClient({ deckId }: Props) {
         throw new Error(data.error || "Failed to generate flashcards");
       }
 
-      const { cards: generatedCards } = await response.json();
+      const data = await response.json();
+
+      if (createNewDeck) {
+        // Redirect to the new deck
+        router.push(`/decks/${data.deckId}`);
+        return;
+      }
 
       // Add generated cards to existing cards
-      const newCards = generatedCards.map(
+      const newCards = data.cards.map(
         (card: { front: string; back: string }) => ({
           id: `new-${cards.length + Math.random()}`,
           front: card.front,
@@ -513,7 +528,7 @@ export default function EditDeckClient({ deckId }: Props) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={handleAIAssist}
+                  onClick={() => setShowGenerateModal(true)}
                   disabled={isGenerating || !topic}
                   className="gap-2"
                 >
@@ -525,7 +540,7 @@ export default function EditDeckClient({ deckId }: Props) {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      AI Assist
+                      AI Generate
                     </>
                   )}
                 </Button>
@@ -654,6 +669,93 @@ export default function EditDeckClient({ deckId }: Props) {
           onClose={() => setShowSuccessToast(false)}
         />
       )}
+
+      {/* Generate Cards Modal */}
+      <GenerateCardsModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        title="Generate Cards with AI"
+        description="Let AI help you create high-quality flashcards for your deck."
+      >
+        <div className="space-y-4 py-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+              Number of Cards
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={generationCount}
+              onChange={(e) =>
+                setGenerationCount(
+                  Math.min(20, Math.max(1, parseInt(e.target.value) || 1))
+                )
+              }
+              className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
+            />
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Choose between 1-20 cards to generate
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="createNewDeck"
+              checked={createNewDeck}
+              onChange={(e) => setCreateNewDeck(e.target.checked)}
+              className="h-4 w-4 rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
+            />
+            <label
+              htmlFor="createNewDeck"
+              className="text-sm text-[var(--text-primary)]"
+            >
+              Create as new deck
+            </label>
+          </div>
+
+          <div className="bg-[var(--neutral-50)] rounded-lg p-4 text-sm text-[var(--text-secondary)]">
+            <p>
+              The AI will generate {generationCount} flashcard
+              {generationCount !== 1 ? "s" : ""} about{" "}
+              <strong>{topic || "[Topic]"}</strong>
+            </p>
+            {createNewDeck ? (
+              <p className="mt-2">
+                A new deck will be created with these cards.
+              </p>
+            ) : (
+              <p className="mt-2">
+                The cards will be added to your current deck.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="outline" onClick={() => setShowGenerateModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAIAssist}
+            disabled={isGenerating || !topic}
+            className="gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Generate Cards
+              </>
+            )}
+          </Button>
+        </div>
+      </GenerateCardsModal>
     </div>
   );
 }
