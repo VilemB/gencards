@@ -28,7 +28,7 @@ const publicNavigation = [
 const protectedNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "My Decks", href: "/decks", icon: Library },
-  { name: "Create", href: "/decks/create", icon: Plus },
+  { name: "Create Deck", href: "/decks/create", icon: Plus },
   { name: "Community", href: "/community", icon: Users },
 ];
 
