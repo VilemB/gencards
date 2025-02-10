@@ -69,6 +69,7 @@ export default function EditDeckClient({ deckId }: Props) {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -202,6 +203,51 @@ export default function EditDeckClient({ deckId }: Props) {
     if (currentPreviewIndex > 0) {
       setCurrentPreviewIndex(currentPreviewIndex - 1);
       setIsCardFlipped(false);
+    }
+  };
+
+  const handleAIAssist = async () => {
+    if (!topic) {
+      setError("Please enter a topic before using AI assist");
+      return;
+    }
+
+    setIsGenerating(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/decks/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic, count: 5 }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to generate flashcards");
+      }
+
+      const { cards: generatedCards } = await response.json();
+
+      // Add generated cards to existing cards
+      const newCards = generatedCards.map(
+        (card: { front: string; back: string }) => ({
+          id: `new-${cards.length + Math.random()}`,
+          front: card.front,
+          back: card.back,
+        })
+      );
+
+      setCards([...cards, ...newCards]);
+    } catch (err) {
+      console.error("Error generating flashcards:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to generate flashcards"
+      );
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -467,13 +513,21 @@ export default function EditDeckClient({ deckId }: Props) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Implement AI assistance
-                  }}
+                  onClick={handleAIAssist}
+                  disabled={isGenerating || !topic}
                   className="gap-2"
                 >
-                  <Sparkles className="h-4 w-4" />
-                  AI Assist
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      AI Assist
+                    </>
+                  )}
                 </Button>
                 <Button
                   type="button"
