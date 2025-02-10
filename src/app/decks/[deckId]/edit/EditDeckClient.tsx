@@ -74,6 +74,7 @@ export default function EditDeckClient({ deckId }: Props) {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generationCount, setGenerationCount] = useState(5);
   const [createNewDeck, setCreateNewDeck] = useState(false);
+  const [generationTopic, setGenerationTopic] = useState("");
 
   // Form state
   const [title, setTitle] = useState("");
@@ -216,6 +217,11 @@ export default function EditDeckClient({ deckId }: Props) {
       return;
     }
 
+    if (!generationTopic) {
+      setError("Please enter what you want to learn about");
+      return;
+    }
+
     setIsGenerating(true);
     setError("");
     setShowGenerateModal(false);
@@ -227,7 +233,7 @@ export default function EditDeckClient({ deckId }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          topic,
+          topic: `${topic} - ${generationTopic}`,
           count: generationCount,
           createNewDeck,
         }),
@@ -246,14 +252,35 @@ export default function EditDeckClient({ deckId }: Props) {
         return;
       }
 
-      // Add generated cards to existing cards
-      const newCards = data.cards.map(
-        (card: { front: string; back: string }) => ({
+      // Add generated cards to existing cards, checking for duplicates
+      const newCards = data.cards
+        .filter(
+          (newCard: { front: string; back: string }) =>
+            !cards.some(
+              (existingCard) =>
+                existingCard.front === newCard.front ||
+                existingCard.back === newCard.back
+            )
+        )
+        .map((card: { front: string; back: string }) => ({
           id: `new-${cards.length + Math.random()}`,
           front: card.front,
           back: card.back,
-        })
-      );
+        }));
+
+      if (newCards.length === 0) {
+        setError(
+          "All generated cards are already in your deck. Try a different topic or count."
+        );
+        return;
+      }
+
+      if (newCards.length < data.cards.length) {
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          setShowSuccessToast(false);
+        }, 3000);
+      }
 
       setCards([...cards, ...newCards]);
     } catch (err) {
@@ -680,6 +707,22 @@ export default function EditDeckClient({ deckId }: Props) {
         <div className="space-y-4 py-4">
           <div>
             <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+              What do you want to learn about?
+            </label>
+            <input
+              type="text"
+              value={generationTopic}
+              onChange={(e) => setGenerationTopic(e.target.value)}
+              placeholder="e.g., animals, verbs, food, numbers..."
+              className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
+            />
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Specify what kind of {topic} content you want to learn
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
               Number of Cards
             </label>
             <input
@@ -719,7 +762,9 @@ export default function EditDeckClient({ deckId }: Props) {
             <p>
               The AI will generate {generationCount} flashcard
               {generationCount !== 1 ? "s" : ""} about{" "}
-              <strong>{topic || "[Topic]"}</strong>
+              <strong>
+                {topic} - {generationTopic || "[Topic]"}
+              </strong>
             </p>
             {createNewDeck ? (
               <p className="mt-2">
@@ -739,7 +784,7 @@ export default function EditDeckClient({ deckId }: Props) {
           </Button>
           <Button
             onClick={handleAIAssist}
-            disabled={isGenerating || !topic}
+            disabled={isGenerating || !topic || !generationTopic}
             className="gap-2"
           >
             {isGenerating ? (

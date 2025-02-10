@@ -50,7 +50,7 @@ Each flashcard should follow these guidelines:
 Format the output as a JSON object with a "flashcards" array containing objects with "front" and "back" properties.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
