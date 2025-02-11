@@ -11,7 +11,7 @@ interface Card {
 
 export async function POST(
   request: Request,
-  { params }: { params: { deckId: string } }
+  context: { params: { deckId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +21,8 @@ export async function POST(
 
     await dbConnect();
 
-    const deck = await Deck.findById(params.deckId);
+    const deckId = context.params.deckId;
+    const deck = await Deck.findById(deckId);
     if (!deck) {
       return NextResponse.json({ error: "Deck not found" }, { status: 404 });
     }
@@ -31,10 +32,10 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { cards } = await request.json();
+    const body = await request.json();
 
     // Validate cards array
-    if (!Array.isArray(cards) || cards.length === 0) {
+    if (!Array.isArray(body.cards) || body.cards.length === 0) {
       return NextResponse.json(
         { error: "Invalid cards data" },
         { status: 400 }
@@ -42,7 +43,7 @@ export async function POST(
     }
 
     // Validate each card has front and back
-    const isValid = cards.every(
+    const isValid = body.cards.every(
       (card: Card) =>
         typeof card.front === "string" &&
         typeof card.back === "string" &&
@@ -58,7 +59,7 @@ export async function POST(
     }
 
     // Add cards to deck
-    deck.cards.push(...cards);
+    deck.cards.push(...body.cards);
     deck.cardCount = deck.cards.length;
     await deck.save();
 
