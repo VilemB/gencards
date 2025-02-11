@@ -1,5 +1,22 @@
 import mongoose from "mongoose";
 
+interface IDeck extends mongoose.Document {
+  userId: string;
+  title: string;
+  description: string;
+  topic: string;
+  isPublic: boolean;
+  cardCount: number;
+  cards: Array<{
+    front: string;
+    back: string;
+  }>;
+  parentDeckId?: mongoose.Types.ObjectId;
+  path: string;
+  level: number;
+  hasChildren: boolean;
+}
+
 const cardSchema = new mongoose.Schema(
   {
     front: {
@@ -18,10 +35,6 @@ const cardSchema = new mongoose.Schema(
 
 const deckSchema = new mongoose.Schema(
   {
-    _id: {
-      type: String,
-      required: true,
-    },
     userId: {
       type: String,
       required: true,
@@ -58,8 +71,8 @@ const deckSchema = new mongoose.Schema(
     path: {
       type: String,
       required: true,
-      default: function () {
-        return `/${this._id}`;
+      default: function (this: IDeck) {
+        return this._id ? `/${this._id}` : null;
       },
     },
     level: {
@@ -82,7 +95,7 @@ deckSchema.index({ path: 1 });
 deckSchema.index({ parentDeckId: 1 });
 
 // Pre-save middleware to update path
-deckSchema.pre("save", async function (next) {
+deckSchema.pre("save", async function (this: IDeck, next) {
   // Always ensure path is set, not just on parentDeckId modification
   if (!this.path || this.isModified("parentDeckId")) {
     if (!this.parentDeckId) {
@@ -109,6 +122,6 @@ deckSchema.pre("save", async function (next) {
 });
 
 // Check if model exists before creating a new one
-const Deck = mongoose.models.Deck || mongoose.model("Deck", deckSchema);
+const Deck = mongoose.models.Deck || mongoose.model<IDeck>("Deck", deckSchema);
 
 export default Deck;
