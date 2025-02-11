@@ -9,17 +9,15 @@ interface Card {
   back: string;
 }
 
-type RouteParams = {
-  params: {
-    deckId: string;
-  };
-};
-
-export async function POST(request: NextRequest, context: RouteParams) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ deckId: string }> }
+) {
   try {
-    const [session, body] = await Promise.all([
+    const [session, body, resolvedParams] = await Promise.all([
       getServerSession(authOptions),
       request.json(),
+      params,
       dbConnect(),
     ]);
 
@@ -27,7 +25,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const deck = await Deck.findById(context.params.deckId);
+    const deck = await Deck.findById(resolvedParams.deckId);
     if (!deck) {
       return NextResponse.json({ error: "Deck not found" }, { status: 404 });
     }
