@@ -11,7 +11,7 @@ interface IDeck extends mongoose.Document {
     front: string;
     back: string;
   }>;
-  parentDeckId?: mongoose.Types.ObjectId;
+  parentDeckId?: mongoose.Types.ObjectId | null;
   path: string;
   level: number;
   hasChildren: boolean;
