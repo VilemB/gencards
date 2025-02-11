@@ -13,6 +13,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Book,
+  Globe2,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/Modal";
@@ -46,6 +49,10 @@ interface Deck {
   cards: Card[];
   createdAt: string;
   updatedAt: string;
+  parentDeckId: string | null;
+  path: string;
+  level: number;
+  hasChildren: boolean;
 }
 
 interface Props {
@@ -57,6 +64,55 @@ interface CardForm {
   front: string;
   back: string;
 }
+
+const DECK_TOPICS = [
+  {
+    id: "Languages",
+    name: "Languages",
+    description: "Vocabulary, grammar, and language learning materials",
+  },
+  {
+    id: "Science",
+    name: "Science",
+    description: "Physics, chemistry, biology, and other scientific topics",
+  },
+  {
+    id: "Mathematics",
+    name: "Mathematics",
+    description: "Algebra, calculus, geometry, and mathematical concepts",
+  },
+  {
+    id: "History",
+    name: "History",
+    description: "Historical events, dates, and cultural studies",
+  },
+  {
+    id: "Geography",
+    name: "Geography",
+    description: "Countries, capitals, landmarks, and geographical features",
+  },
+  {
+    id: "Literature",
+    name: "Literature",
+    description: "Books, authors, literary terms, and analysis",
+  },
+  {
+    id: "Arts",
+    name: "Arts",
+    description: "Visual arts, music, theater, and creative studies",
+  },
+  {
+    id: "Technology",
+    name: "Technology",
+    description: "Programming, computer science, and tech concepts",
+  },
+  {
+    id: "Business",
+    name: "Business",
+    description: "Economics, management, and business principles",
+  },
+  { id: "Other", name: "Other", description: "Other educational topics" },
+];
 
 export default function EditDeckClient({ deckId }: Props) {
   const router = useRouter();
@@ -75,6 +131,8 @@ export default function EditDeckClient({ deckId }: Props) {
   const [generationCount, setGenerationCount] = useState(5);
   const [createNewDeck, setCreateNewDeck] = useState(false);
   const [generationTopic, setGenerationTopic] = useState("");
+  const [parentDeckId, setParentDeckId] = useState<string | null>(null);
+  const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -82,6 +140,27 @@ export default function EditDeckClient({ deckId }: Props) {
   const [topic, setTopic] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [cards, setCards] = useState<CardForm[]>([]);
+
+  useEffect(() => {
+    async function loadParentDecks() {
+      try {
+        const response = await fetch("/api/decks?ownership=my");
+        if (!response.ok) {
+          throw new Error("Failed to load decks");
+        }
+        const data = await response.json();
+        // Filter out current deck and its children to prevent circular references
+        const filteredDecks = data.decks.filter(
+          (d: Deck) => d._id !== deckId && (!d.path || !d.path.includes(deckId))
+        );
+        setAvailableParentDecks(filteredDecks);
+      } catch (err) {
+        console.error("Error loading parent decks:", err);
+      }
+    }
+
+    loadParentDecks();
+  }, [deckId]);
 
   useEffect(() => {
     async function loadDeck() {
@@ -98,6 +177,7 @@ export default function EditDeckClient({ deckId }: Props) {
         setDescription(data.description);
         setTopic(data.topic);
         setIsPublic(data.isPublic);
+        setParentDeckId(data.parentDeckId);
         setCards(
           data.cards.map((card: Card) => ({
             id: card._id,
@@ -172,6 +252,7 @@ export default function EditDeckClient({ deckId }: Props) {
           description,
           topic,
           isPublic,
+          parentDeckId,
           cards: cards.map(({ front, back }) => ({ front, back })),
           cardCount: cards.length,
         }),
@@ -438,64 +519,66 @@ export default function EditDeckClient({ deckId }: Props) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-              Edit Deck
-            </h1>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsPreviewMode(true)}
-                className="gap-2"
-              >
-                <Eye className="h-4 w-4" />
-                Preview
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDiscardModal(true)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving...</span>
-                  </div>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] p-8 text-white">
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Edit Deck</h1>
+                  <p className="text-white/80">
+                    Update your flashcard deck details and cards
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsPreviewMode(true)}
+                    className="gap-2 bg-white/10 hover:bg-white/20 border-white/20"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </Button>
+                </div>
+              </div>
+            </div>
+            {/* Decorative background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                  backgroundSize: "30px 30px",
+                }}
+              />
             </div>
           </div>
 
           {/* Deck Details */}
-          <div className="space-y-4">
+          <div className="bg-[var(--neutral-50)] rounded-xl p-6 space-y-6">
+            {/* Title */}
             <div>
               <label
                 htmlFor="title"
-                className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                className="block text-sm font-medium text-[var(--text-primary)] mb-2"
               >
-                Title
+                Deck Title
               </label>
               <input
                 type="text"
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-                placeholder="Enter deck title"
+                className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                placeholder="e.g., Spanish Vocabulary, Math Formulas"
                 required
               />
             </div>
 
+            {/* Description */}
             <div>
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                className="block text-sm font-medium text-[var(--text-primary)] mb-2"
               >
                 Description
               </label>
@@ -503,50 +586,105 @@ export default function EditDeckClient({ deckId }: Props) {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-                placeholder="Enter deck description"
+                className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-h-[120px]"
+                placeholder="Describe what this deck is about..."
                 required
               />
             </div>
 
+            {/* Topic */}
             <div>
               <label
                 htmlFor="topic"
-                className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+                className="block text-sm font-medium text-[var(--text-primary)] mb-2"
               >
                 Topic
               </label>
-              <input
-                type="text"
-                id="topic"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-                placeholder="Enter deck topic"
-                required
-              />
+              <div className="relative">
+                <select
+                  id="topic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] appearance-none"
+                >
+                  {/* Include current topic if it's not in DECK_TOPICS */}
+                  {topic && !DECK_TOPICS.find((t) => t.id === topic) && (
+                    <option key={topic} value={topic}>
+                      {topic}
+                    </option>
+                  )}
+                  {DECK_TOPICS.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.name}
+                    </option>
+                  ))}
+                </select>
+                <Book className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
+              </div>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                {DECK_TOPICS.find((t) => t.id === topic)?.description ||
+                  "Custom topic"}
+              </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isPublic"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="h-4 w-4 rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
-              />
+            {/* Parent Deck */}
+            <div>
               <label
-                htmlFor="isPublic"
-                className="text-sm text-[var(--text-primary)]"
+                htmlFor="parentDeck"
+                className="block text-sm font-medium text-[var(--text-primary)] mb-2"
               >
-                Make this deck public
+                Parent Deck (Optional)
               </label>
+              <select
+                id="parentDeck"
+                value={parentDeckId || ""}
+                onChange={(e) => setParentDeckId(e.target.value || null)}
+                className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                <option value="">No Parent (Top-Level Deck)</option>
+                {availableParentDecks.map((deck) => (
+                  <option key={deck._id} value={deck._id}>
+                    {"  ".repeat(deck.level || 0)}
+                    {deck.title}
+                    {deck.level > 0 && " (Subdeck)"}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Select a parent deck to create a subdeck
+              </p>
+            </div>
+
+            {/* Visibility */}
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-[var(--background)]">
+              <div className="p-3 bg-[var(--neutral-100)] rounded-lg">
+                {isPublic ? (
+                  <Globe2 className="h-6 w-6 text-[var(--primary)]" />
+                ) : (
+                  <Lock className="h-6 w-6 text-[var(--text-secondary)]" />
+                )}
+              </div>
+              <div className="flex-1">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                  />
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Share with Community
+                  </span>
+                </label>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  Make this deck available to other users
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Cards Section */}
-          <div className="space-y-4">
+          <div className="bg-[var(--neutral-50)] rounded-xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                 Cards
@@ -671,136 +809,155 @@ export default function EditDeckClient({ deckId }: Props) {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-lg">
               <AlertTriangle className="h-5 w-5 flex-shrink-0" />
               <p className="text-sm">{error}</p>
             </div>
           )}
-        </form>
-      </div>
 
-      {/* Discard Changes Modal */}
-      <Modal
-        isOpen={showDiscardModal}
-        onClose={() => setShowDiscardModal(false)}
-        title="Discard Changes"
-        description="Are you sure you want to discard your changes? This action cannot be undone."
-        confirmText="Discard"
-        onConfirm={() => router.push(`/decks/${deckId}`)}
-      />
-
-      {/* Success Toast */}
-      {showSuccessToast && (
-        <Toast
-          message="Changes saved successfully!"
-          onClose={() => setShowSuccessToast(false)}
-        />
-      )}
-
-      {/* Generate Cards Modal */}
-      <GenerateCardsModal
-        isOpen={showGenerateModal}
-        onClose={() => setShowGenerateModal(false)}
-        title="Generate Cards with AI"
-        description="Let AI help you create high-quality flashcards for your deck."
-      >
-        <div className="space-y-4 py-4">
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
-              What do you want to learn about?
-            </label>
-            <input
-              type="text"
-              value={generationTopic}
-              onChange={(e) => setGenerationTopic(e.target.value)}
-              placeholder="e.g., animals, verbs, food, numbers..."
-              className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-            />
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Specify what kind of {topic} content you want to learn
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
-              Number of Cards
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="20"
-              value={generationCount}
-              onChange={(e) =>
-                setGenerationCount(
-                  Math.min(20, Math.max(1, parseInt(e.target.value) || 1))
-                )
-              }
-              className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-            />
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Choose between 1-20 cards to generate
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="createNewDeck"
-              checked={createNewDeck}
-              onChange={(e) => setCreateNewDeck(e.target.checked)}
-              className="h-4 w-4 rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
-            />
-            <label
-              htmlFor="createNewDeck"
-              className="text-sm text-[var(--text-primary)]"
+          <div className="flex gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDiscardModal(true)}
+              disabled={isSaving}
+              className="flex-1"
             >
-              Create as new deck
-            </label>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSaving} className="flex-1 gap-2">
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </div>
+        </form>
+
+        {/* Discard Changes Modal */}
+        <Modal
+          isOpen={showDiscardModal}
+          onClose={() => setShowDiscardModal(false)}
+          title="Discard Changes"
+          description="Are you sure you want to discard your changes? This action cannot be undone."
+          confirmText="Discard"
+          onConfirm={() => router.push(`/decks/${deckId}`)}
+        />
+
+        {/* Success Toast */}
+        {showSuccessToast && (
+          <Toast
+            message="Changes saved successfully!"
+            onClose={() => setShowSuccessToast(false)}
+          />
+        )}
+
+        {/* Generate Cards Modal */}
+        <GenerateCardsModal
+          isOpen={showGenerateModal}
+          onClose={() => setShowGenerateModal(false)}
+          title="Generate Cards with AI"
+          description="Let AI help you create high-quality flashcards for your deck."
+        >
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                What do you want to learn about?
+              </label>
+              <input
+                type="text"
+                value={generationTopic}
+                onChange={(e) => setGenerationTopic(e.target.value)}
+                placeholder="e.g., animals, verbs, food, numbers..."
+                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
+              />
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Specify what kind of {topic} content you want to learn
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                Number of Cards
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={generationCount}
+                onChange={(e) =>
+                  setGenerationCount(
+                    Math.min(20, Math.max(1, parseInt(e.target.value) || 1))
+                  )
+                }
+                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
+              />
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Choose between 1-20 cards to generate
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="createNewDeck"
+                checked={createNewDeck}
+                onChange={(e) => setCreateNewDeck(e.target.checked)}
+                className="h-4 w-4 rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
+              />
+              <label
+                htmlFor="createNewDeck"
+                className="text-sm text-[var(--text-primary)]"
+              >
+                Create as new deck
+              </label>
+            </div>
+
+            <div className="bg-[var(--neutral-50)] rounded-lg p-4 text-sm text-[var(--text-secondary)]">
+              <p>
+                The AI will generate {generationCount} flashcard
+                {generationCount !== 1 ? "s" : ""} about{" "}
+                <strong>
+                  {topic} - {generationTopic || "[Topic]"}
+                </strong>
+              </p>
+              {createNewDeck ? (
+                <p className="mt-2">
+                  A new deck will be created with these cards.
+                </p>
+              ) : (
+                <p className="mt-2">
+                  The cards will be added to your current deck.
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="bg-[var(--neutral-50)] rounded-lg p-4 text-sm text-[var(--text-secondary)]">
-            <p>
-              The AI will generate {generationCount} flashcard
-              {generationCount !== 1 ? "s" : ""} about{" "}
-              <strong>
-                {topic} - {generationTopic || "[Topic]"}
-              </strong>
-            </p>
-            {createNewDeck ? (
-              <p className="mt-2">
-                A new deck will be created with these cards.
-              </p>
-            ) : (
-              <p className="mt-2">
-                The cards will be added to your current deck.
-              </p>
-            )}
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowGenerateModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAIAssist}
+              disabled={isGenerating || !topic || !generationTopic}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Generate Cards
+                </>
+              )}
+            </Button>
           </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => setShowGenerateModal(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAIAssist}
-            disabled={isGenerating || !topic || !generationTopic}
-            className="gap-2"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Generate Cards
-              </>
-            )}
-          </Button>
-        </div>
-      </GenerateCardsModal>
+        </GenerateCardsModal>
+      </div>
     </div>
   );
 }

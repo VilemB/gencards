@@ -1,30 +1,99 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Loader2, AlertTriangle, Plus, Book, Globe2, Lock } from "lucide-react";
+import { Loader2, GitBranch, Book, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DECK_TOPICS } from "@/lib/constants";
 
-interface CreateDeckForm {
+interface Deck {
+  _id: string;
   title: string;
-  description: string;
-  topic: string;
-  isPublic: boolean;
+  level: number;
+  path: string;
 }
+
+const DECK_TOPICS = [
+  {
+    id: "Languages",
+    name: "Languages",
+    description: "Vocabulary, grammar, and language learning materials",
+  },
+  {
+    id: "Science",
+    name: "Science",
+    description: "Physics, chemistry, biology, and other scientific topics",
+  },
+  {
+    id: "Mathematics",
+    name: "Mathematics",
+    description: "Algebra, calculus, geometry, and mathematical concepts",
+  },
+  {
+    id: "History",
+    name: "History",
+    description: "Historical events, dates, and cultural studies",
+  },
+  {
+    id: "Geography",
+    name: "Geography",
+    description: "Countries, capitals, landmarks, and geographical features",
+  },
+  {
+    id: "Literature",
+    name: "Literature",
+    description: "Books, authors, literary terms, and analysis",
+  },
+  {
+    id: "Arts",
+    name: "Arts",
+    description: "Visual arts, music, theater, and creative studies",
+  },
+  {
+    id: "Technology",
+    name: "Technology",
+    description: "Programming, computer science, and tech concepts",
+  },
+  {
+    id: "Business",
+    name: "Business",
+    description: "Economics, management, and business principles",
+  },
+  { id: "Other", name: "Other", description: "Other educational topics" },
+];
 
 export default function CreateDeckPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const parentId = searchParams.get("parentId");
+  const parentTitle = searchParams.get("parentTitle");
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [topic, setTopic] = useState("Languages");
+  const [isPublic, setIsPublic] = useState(false);
+  const [parentDeckId, setParentDeckId] = useState<string | null>(parentId);
+  const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState<CreateDeckForm>({
-    title: "",
-    description: "",
-    topic: "Languages",
-    isPublic: false,
-  });
+
+  useEffect(() => {
+    async function loadParentDecks() {
+      try {
+        const response = await fetch("/api/decks?ownership=my");
+        if (!response.ok) {
+          throw new Error("Failed to load decks");
+        }
+        const data = await response.json();
+        setAvailableParentDecks(data.decks);
+      } catch (err) {
+        console.error("Error loading parent decks:", err);
+      }
+    }
+
+    loadParentDecks();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,16 +106,21 @@ export default function CreateDeckPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          title,
+          description,
+          topic,
+          isPublic,
+          parentDeckId,
+        }),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to create deck");
+        throw new Error("Failed to create deck");
       }
 
-      const deck = await response.json();
-      router.push(`/decks/${deck._id}`);
+      const data = await response.json();
+      router.push(`/decks/${data._id}`);
     } catch (err) {
       console.error("Error creating deck:", err);
       setError(err instanceof Error ? err.message : "Failed to create deck");
@@ -55,15 +129,10 @@ export default function CreateDeckPage() {
     }
   };
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
-      </div>
-    );
+  if (!session) {
+    router.push("/auth/signin");
+    return null;
   }
-
-  if (!session) return null;
 
   return (
     <div className="min-h-screen bg-[var(--background)] py-8">
@@ -97,6 +166,16 @@ export default function CreateDeckPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="bg-[var(--neutral-50)] rounded-xl p-6 space-y-6">
+            {parentId && parentTitle && (
+              <div className="flex items-center gap-2 text-[var(--text-secondary)] bg-[var(--background)] p-3 rounded-lg">
+                <GitBranch className="h-4 w-4" />
+                <span>Creating subdeck under:</span>
+                <span className="font-medium text-[var(--primary)]">
+                  {decodeURIComponent(parentTitle)}
+                </span>
+              </div>
+            )}
+
             {/* Title */}
             <div>
               <label
@@ -108,12 +187,11 @@ export default function CreateDeckPage() {
               <input
                 type="text"
                 id="title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                 placeholder="e.g., Spanish Vocabulary, Math Formulas"
                 required
-                disabled={isLoading}
               />
             </div>
 
@@ -127,14 +205,11 @@ export default function CreateDeckPage() {
               </label>
               <textarea
                 id="description"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-h-[120px]"
                 placeholder="Describe what this deck is about..."
                 required
-                disabled={isLoading}
               />
             </div>
 
@@ -149,10 +224,9 @@ export default function CreateDeckPage() {
               <div className="relative">
                 <select
                   id="topic"
-                  value={form.topic}
-                  onChange={(e) => setForm({ ...form, topic: e.target.value })}
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] appearance-none"
-                  disabled={isLoading}
                 >
                   {DECK_TOPICS.map((topic) => (
                     <option key={topic.id} value={topic.id}>
@@ -163,45 +237,64 @@ export default function CreateDeckPage() {
                 <Book className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
               </div>
               <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                {DECK_TOPICS.find((t) => t.id === form.topic)?.description}
+                {DECK_TOPICS.find((t) => t.id === topic)?.description}
+              </p>
+            </div>
+
+            {/* Parent Deck */}
+            <div>
+              <label
+                htmlFor="parentDeck"
+                className="block text-sm font-medium text-[var(--text-primary)] mb-2"
+              >
+                Parent Deck (Optional)
+              </label>
+              <select
+                id="parentDeck"
+                value={parentDeckId || ""}
+                onChange={(e) => setParentDeckId(e.target.value || null)}
+                className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                <option value="">No Parent (Top-Level Deck)</option>
+                {availableParentDecks.map((deck) => (
+                  <option key={deck._id} value={deck._id}>
+                    {"  ".repeat(deck.level || 0)}
+                    {deck.title}
+                    {deck.level > 0 && " (Subdeck)"}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Select a parent deck to create a subdeck
               </p>
             </div>
 
             {/* Visibility */}
             <div className="flex items-center gap-4 p-4 rounded-lg bg-[var(--background)]">
-              <div className="p-3 bg-[var(--neutral-100)] rounded-lg">
-                {form.isPublic ? (
-                  <Globe2 className="h-6 w-6 text-[var(--primary)]" />
-                ) : (
-                  <Lock className="h-6 w-6 text-[var(--text-secondary)]" />
-                )}
-              </div>
-              <div className="flex-1">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.isPublic}
-                    onChange={(e) =>
-                      setForm({ ...form, isPublic: e.target.checked })
-                    }
-                    className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
-                    disabled={isLoading}
-                  />
-                  <span className="font-medium text-[var(--text-primary)]">
-                    Share with Community
-                  </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isPublic"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                  className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                />
+                <label
+                  htmlFor="isPublic"
+                  className="font-medium text-[var(--text-primary)]"
+                >
+                  Share with Community
                 </label>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">
-                  Make this deck available to other users
-                </p>
               </div>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Make this deck available to other users
+              </p>
             </div>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-[var(--error)] bg-red-50 px-4 py-3 rounded-lg">
-              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-              <p className="text-sm">{error}</p>
+            <div className="text-red-600 bg-red-50 p-4 rounded-lg text-sm">
+              {error}
             </div>
           )}
 

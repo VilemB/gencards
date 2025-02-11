@@ -26,10 +26,23 @@ interface Deck {
   cardCount: number;
   userId: string;
   createdAt: string;
+  parentDeckId: string | null;
+  path: string;
+  level: number;
+  hasChildren: boolean;
 }
 
 interface DecksContentProps {
   mode?: "personal" | "community";
+}
+
+function organizeDecksHierarchy(decks: Deck[]) {
+  // Sort decks by path to ensure parents come before children
+  return decks.sort((a, b) => {
+    if (a.path < b.path) return -1;
+    if (a.path > b.path) return 1;
+    return 0;
+  });
 }
 
 export default function DecksContent({ mode = "personal" }: DecksContentProps) {
@@ -125,6 +138,8 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
       `${mode === "community" ? "/community" : "/decks"}?${params.toString()}`
     );
   };
+
+  const organizedDecks = organizeDecksHierarchy(decks);
 
   if (isLoading) {
     return (
@@ -321,91 +336,79 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
         </div>
 
         {/* Decks Grid */}
-        {decks.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {decks.map((deck) => (
-              <div
-                key={deck._id}
-                className="group relative overflow-hidden bg-[var(--neutral-50)] rounded-xl hover:bg-[var(--neutral-100)] transition-all duration-200"
-              >
-                <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {organizedDecks.map((deck) => (
+            <div
+              key={deck._id}
+              style={{ marginLeft: `${deck.level * 1}rem` }}
+              className={`relative bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200 ${
+                deck.hasChildren ? "border-l-4 border-[var(--primary)]" : ""
+              }`}
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex-1">
                   <div className="flex items-start justify-between mb-4">
-                    <Link
-                      href={`/decks/${deck._id}`}
-                      className="flex-1 group/title"
-                    >
-                      <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover/title:text-[var(--primary)] transition-colors">
+                    <div>
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1 line-clamp-2">
                         {deck.title}
-                      </h2>
-                      <p className="text-[var(--text-secondary)] mt-1 line-clamp-2">
+                      </h3>
+                      <p className="text-sm text-[var(--text-secondary)] line-clamp-2">
                         {deck.description}
                       </p>
-                    </Link>
-                    <Link
-                      href={`/decks/${deck._id}/study`}
-                      className="inline-flex items-center justify-center rounded-lg w-8 h-8 text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--neutral-200)] transition-colors"
-                    >
-                      <Play className="h-4 w-4" />
-                    </Link>
+                    </div>
+                    {mode === "personal" && (
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                      >
+                        <Link href={`/decks/${deck._id}/study`}>
+                          <Play className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
-                    <span className="flex items-center gap-1">
-                      <Book className="h-4 w-4" />
-                      {deck.cardCount} cards
-                    </span>
+                    <span>{deck.cardCount} cards</span>
                     <span>•</span>
                     <span>{deck.topic}</span>
-                    <span>•</span>
-                    <span>
-                      {new Date(deck.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
                   </div>
                 </div>
-                <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200 pointer-events-none" />
+                <div className="mt-4 pt-4 border-t border-[var(--neutral-200)]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {mode === "community" ? (
+                        <User className="h-4 w-4 text-[var(--text-secondary)]" />
+                      ) : (
+                        <Filter className="h-4 w-4 text-[var(--text-secondary)]" />
+                      )}
+                      <span className="text-sm text-[var(--text-secondary)]">
+                        {new Date(deck.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {mode === "personal" && (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/decks/${deck._id}/edit`}>Edit</Link>
+                        </Button>
+                      )}
+                      <Button
+                        asChild
+                        variant={mode === "community" ? "default" : "outline"}
+                        size="sm"
+                      >
+                        <Link href={`/decks/${deck._id}`}>
+                          {mode === "community" ? "View Deck" : "Details"}
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-[var(--neutral-50)] rounded-xl">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--primary-light)] text-[var(--primary)] mb-4">
-              {mode === "community" ? (
-                <Users className="h-6 w-6" />
-              ) : (
-                <Book className="h-6 w-6" />
-              )}
             </div>
-            <p className="text-[var(--text-secondary)] mb-4">
-              {currentTopic
-                ? `No ${
-                    mode === "community" ? "public " : ""
-                  }decks found for topic "${currentTopic}"`
-                : searchQuery
-                ? `No decks found matching "${searchQuery}"`
-                : mode === "community"
-                ? "No public decks found"
-                : currentOwnership === "my"
-                ? "You haven't created any decks yet"
-                : currentOwnership === "others"
-                ? "No decks from others found"
-                : "No decks found"}
-            </p>
-            {mode === "personal" &&
-              currentOwnership === "my" &&
-              !searchQuery &&
-              !currentTopic && (
-                <Button asChild>
-                  <Link href="/decks/create" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Your First Deck
-                  </Link>
-                </Button>
-              )}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );

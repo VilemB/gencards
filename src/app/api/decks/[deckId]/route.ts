@@ -30,6 +30,13 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 403 });
     }
 
+    // Ensure path is initialized
+    if (!deck.path) {
+      deck.path = `/${deck._id}`;
+      deck.level = 0;
+      await deck.save();
+    }
+
     return NextResponse.json(deck);
   } catch (error) {
     console.error("[DECK_GET]", error);
