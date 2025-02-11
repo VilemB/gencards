@@ -14,7 +14,11 @@ export async function POST(
   { params }: { params: { deckId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const [session, body] = await Promise.all([
+      getServerSession(authOptions),
+      request.json(),
+    ]);
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -31,8 +35,6 @@ export async function POST(
     if (deck.userId !== session.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const body = await request.json();
 
     // Validate cards array
     if (!Array.isArray(body.cards) || body.cards.length === 0) {
