@@ -18,6 +18,10 @@ const cardSchema = new mongoose.Schema(
 
 const deckSchema = new mongoose.Schema(
   {
+    _id: {
+      type: String,
+      required: true,
+    },
     userId: {
       type: String,
       required: true,
