@@ -85,3 +85,15 @@ export default function Card({
     </div>
   );
 }
+
+interface CardContainerProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function CardContainer({
+  children,
+  className = "",
+}: CardContainerProps) {
+  return <div className={`card ${className}`}>{children}</div>;
+}

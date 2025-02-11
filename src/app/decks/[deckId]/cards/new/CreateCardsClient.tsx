@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import Card from "@/components/ui/Card";
+import { CardContainer } from "@/components/ui/Card";
 import { toast } from "sonner";
 import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
 
@@ -89,7 +89,7 @@ export default function CreateCardsClient({
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
           {cards.map((card, index) => (
-            <Card key={index} className="p-4">
+            <CardContainer key={index} className="p-4">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-semibold">Card {index + 1}</h3>
                 {cards.length > 1 && (
@@ -131,7 +131,7 @@ export default function CreateCardsClient({
                   />
                 </div>
               </div>
-            </Card>
+            </CardContainer>
           ))}
         </div>
 
