@@ -188,7 +188,13 @@ export default function DeckClient({ deckId }: Props) {
         {/* Header Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-8 mb-8">
           <div className="relative z-10">
-            <DeckBreadcrumb path={deck.path} parentDeckId={deck.parentDeckId} />
+            <DeckBreadcrumb
+              deckId={deck._id}
+              deckTitle={deck.title}
+              currentPage=""
+              path={deck.path}
+              parentDeckId={deck.parentDeckId}
+            />
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div className="flex-1">
                 <h1 className="text-4xl font-bold mb-3 text-white">
