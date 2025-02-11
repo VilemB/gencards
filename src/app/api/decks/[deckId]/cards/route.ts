@@ -11,7 +11,7 @@ interface Card {
 
 export async function POST(
   request: Request,
-  context: { params: { deckId: string } }
+  { params }: { params: { deckId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +21,7 @@ export async function POST(
 
     await dbConnect();
 
-    const deckId = context.params.deckId;
+    const deckId = params.deckId;
     const deck = await Deck.findById(deckId);
     if (!deck) {
       return NextResponse.json({ error: "Deck not found" }, { status: 404 });
