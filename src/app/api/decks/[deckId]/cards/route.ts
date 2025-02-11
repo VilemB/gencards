@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Deck from "@/models/Deck";
 import dbConnect from "@/lib/mongodb";
+import { NextRequest } from "next/server";
 
 interface Card {
   front: string;
@@ -10,23 +11,21 @@ interface Card {
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { deckId: string } }
 ) {
   try {
     const [session, body] = await Promise.all([
       getServerSession(authOptions),
       request.json(),
+      dbConnect(),
     ]);
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await dbConnect();
-
-    const deckId = params.deckId;
-    const deck = await Deck.findById(deckId);
+    const deck = await Deck.findById(params.deckId);
     if (!deck) {
       return NextResponse.json({ error: "Deck not found" }, { status: 404 });
     }
