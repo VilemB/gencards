@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Deck from "@/models/Deck";
-import dbConnect from "@/lib/dbConnect";
+import dbConnect from "@/lib/mongodb";
 
 interface Card {
   front: string;
