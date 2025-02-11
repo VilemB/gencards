@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Deck from "@/models/Deck";
@@ -10,8 +10,8 @@ interface Card {
 }
 
 export async function POST(
-  request: NextRequest,
-  context: { params: { deckId: string } }
+  request: Request,
+  { params }: { params: { deckId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +21,7 @@ export async function POST(
 
     await dbConnect();
 
-    const deck = await Deck.findById(context.params.deckId);
+    const deck = await Deck.findById(params.deckId);
     if (!deck) {
       return NextResponse.json({ error: "Deck not found" }, { status: 404 });
     }
