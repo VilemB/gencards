@@ -3,9 +3,9 @@ import CreateCardsClient from "./CreateCardsClient";
 import { getDeck } from "@/lib/api/decks";
 
 interface CreateCardsPageProps {
-  params: {
+  params: Promise<{
     deckId: string;
-  };
+  }>;
 }
 
 export default async function CreateCardsPage({
