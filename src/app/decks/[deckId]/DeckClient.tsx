@@ -13,16 +13,16 @@ import {
   Users,
   Lock,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   Plus,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/Modal";
 import { Toast } from "@/components/ui/Toast";
 import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Deck } from "@/types/deck";
+import { CardPreviewModal } from "@/components/ui/CardPreviewModal";
 
 interface Props {
   deckId: string;
@@ -339,60 +339,18 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
         )}
 
         {/* Card Preview Modal */}
-        {selectedCard !== null && deck.cards[selectedCard] && (
-          <Modal
+        {selectedCard !== null && deck?.cards[selectedCard] && (
+          <CardPreviewModal
             isOpen={selectedCard !== null}
             onClose={handleClosePreview}
-            title={`Card ${selectedCard + 1} of ${deck.cards.length}`}
-            description={
-              <div>
-                <div
-                  className="min-h-[200px] p-6 bg-[var(--neutral-50)] rounded-xl mb-6 cursor-pointer select-none"
-                  onClick={handleFlipCard}
-                >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={isCardFlipped ? "back" : "front"}
-                      initial={{ rotateX: -90, opacity: 0 }}
-                      animate={{ rotateX: 0, opacity: 1 }}
-                      exit={{ rotateX: 90, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="prose prose-lg max-w-none"
-                      dangerouslySetInnerHTML={{
-                        __html: isCardFlipped
-                          ? deck.cards[selectedCard].back
-                          : deck.cards[selectedCard].front,
-                      }}
-                    />
-                  </AnimatePresence>
-                  <div className="text-center text-sm text-[var(--text-secondary)] mt-4">
-                    Click to flip
-                  </div>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={handlePreviousCard}
-                    disabled={selectedCard === 0}
-                    className="flex-1 gap-2"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleNextCard}
-                    disabled={selectedCard === deck.cards.length - 1}
-                    className="flex-1 gap-2"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            }
-            onConfirm={handleClosePreview}
-            confirmText="Close Preview"
+            currentCard={selectedCard}
+            totalCards={deck.cards.length}
+            front={deck.cards[selectedCard].front}
+            back={deck.cards[selectedCard].back}
+            isFlipped={isCardFlipped}
+            onFlip={handleFlipCard}
+            onPrevious={handlePreviousCard}
+            onNext={handleNextCard}
           />
         )}
 
