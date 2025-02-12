@@ -21,14 +21,14 @@ export function DeckBreadcrumb({
       <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)] mb-4">
         <Link
           href="/decks"
-          className="hover:text-[var(--primary)] transition-colors"
+          className="hover:text-[var(--neutral-300)] transition-colors"
         >
           Decks
         </Link>
         <ArrowRight className="h-3 w-3" />
         <Link
           href={`/decks/${deckId}`}
-          className="hover:text-[var(--primary)] transition-colors"
+          className="hover:text-[var(--neutral-300)] transition-colors"
         >
           {deckTitle}
         </Link>

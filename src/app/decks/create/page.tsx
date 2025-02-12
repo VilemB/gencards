@@ -66,17 +66,36 @@ export default function CreateDeckPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const parentId = searchParams.get("parentId");
-  const parentTitle = searchParams.get("parentTitle");
+  const parentDeckId = searchParams.get("parentDeckId");
+  const initialTopic = searchParams.get("topic") || "Languages";
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [topic, setTopic] = useState("Languages");
+  const [topic, setTopic] = useState(initialTopic);
   const [isPublic, setIsPublic] = useState(false);
-  const [parentDeckId, setParentDeckId] = useState<string | null>(parentId);
+  const [parentDeck, setParentDeck] = useState<Deck | null>(null);
   const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadParentDeck() {
+      if (!parentDeckId) return;
+
+      try {
+        const response = await fetch(`/api/decks/${parentDeckId}`);
+        if (!response.ok) {
+          throw new Error("Failed to load parent deck");
+        }
+        const data = await response.json();
+        setParentDeck(data);
+      } catch (err) {
+        console.error("Error loading parent deck:", err);
+      }
+    }
+
+    loadParentDeck();
+  }, [parentDeckId]);
 
   useEffect(() => {
     async function loadParentDecks() {
@@ -111,7 +130,7 @@ export default function CreateDeckPage() {
           description,
           topic,
           isPublic,
-          parentDeckId,
+          parentDeckId: parentDeckId,
         }),
       });
 
@@ -166,12 +185,12 @@ export default function CreateDeckPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="bg-[var(--neutral-50)] rounded-xl p-6 space-y-6">
-            {parentId && parentTitle && (
+            {parentDeck && (
               <div className="flex items-center gap-2 text-[var(--text-secondary)] bg-[var(--background)] p-3 rounded-lg">
                 <GitBranch className="h-4 w-4" />
                 <span>Creating subdeck under:</span>
                 <span className="font-medium text-[var(--primary)]">
-                  {decodeURIComponent(parentTitle)}
+                  {parentDeck.title}
                 </span>
               </div>
             )}

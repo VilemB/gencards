@@ -1,19 +1,27 @@
 import Deck from "@/models/Deck";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
+
+interface ICard {
+  _id: Types.ObjectId;
+  front: string;
+  back: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface IDeck extends Document {
+  _id: Types.ObjectId;
   userId: string;
   title: string;
   description: string;
   topic: string;
   isPublic: boolean;
   cardCount: number;
-  cards: Array<{
-    front: string;
-    back: string;
-  }>;
-  parentDeckId?: string | null;
+  cards: ICard[];
+  createdAt: Date;
+  updatedAt: Date;
+  parentDeckId?: Types.ObjectId | null;
   path: string;
   level: number;
   hasChildren: boolean;

@@ -22,38 +22,17 @@ import { Modal } from "@/components/ui/Modal";
 import { Toast } from "@/components/ui/Toast";
 import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface Card {
-  _id: string;
-  front: string;
-  back: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Deck {
-  _id: string;
-  userId: string;
-  title: string;
-  description: string;
-  topic: string;
-  isPublic: boolean;
-  cardCount: number;
-  cards: Card[];
-  createdAt: string;
-  updatedAt: string;
-  parentDeckId?: string;
-  path?: string;
-}
+import { Deck } from "@/types/deck";
 
 interface Props {
   deckId: string;
+  deck: Deck;
 }
 
-export default function DeckClient({ deckId }: Props) {
+export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   const router = useRouter();
   const { data: session } = useSession();
-  const [deck, setDeck] = useState<Deck | null>(null);
+  const [deck, setDeck] = useState<Deck | null>(initialDeck);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -236,6 +215,18 @@ export default function DeckClient({ deckId }: Props) {
                     >
                       <Edit className="h-4 w-4" />
                       Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        router.push(
+                          `/decks/create?parentDeckId=${deckId}&topic=${deck?.topic}`
+                        )
+                      }
+                      className="bg-white/10 border-white/10 hover:bg-white/20 text-white gap-2 backdrop-blur-sm"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Subdeck
                     </Button>
                     <Button
                       variant="outline"
