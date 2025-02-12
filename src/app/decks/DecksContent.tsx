@@ -43,16 +43,16 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
       try {
         const params = new URLSearchParams();
         if (currentTopic) params.set("topic", currentTopic);
-        if (currentOwnership !== "all" && mode === "personal")
+        if (currentOwnership !== "all")
           params.set("ownership", currentOwnership);
         if (debouncedSearch) params.set("search", debouncedSearch);
 
-        const url =
-          mode === "community"
-            ? `/api/decks/public${
-                params.toString() ? `?${params.toString()}` : ""
-              }`
-            : `/api/decks${params.toString() ? `?${params.toString()}` : ""}`;
+        const url = `/api/decks${
+          params.toString() ? `?${params.toString()}` : ""
+        }`;
+        if (mode === "community") {
+          params.set("public", "true");
+        }
 
         const response = await fetch(url);
 
@@ -101,7 +101,9 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
     } else {
       params.delete("ownership");
     }
-    router.push(`/decks?${params.toString()}`);
+    router.push(
+      `${mode === "community" ? "/community" : "/decks"}?${params.toString()}`
+    );
   };
 
   const handleSearch = (value: string) => {
@@ -227,63 +229,86 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
         </div>
 
         {/* Filters Section */}
-        <div className="mb-8 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search decks..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg bg-[var(--neutral-50)] border border-[var(--neutral-200)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            />
+        <div className="mb-8 space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+              <Search className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Search by title or description
+              </span>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search decks..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg bg-[var(--neutral-50)] border border-[var(--neutral-200)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              />
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={!currentTopic ? "secondary" : "ghost"}
-              onClick={() => handleTopicChange(null)}
-              className="text-sm"
-            >
-              All Topics
-            </Button>
-            {topics.map((topic) => (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+              <Book className="h-4 w-4" />
+              <span className="text-sm font-medium">Filter by topic</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <Button
-                key={topic}
-                variant={currentTopic === topic ? "secondary" : "ghost"}
-                onClick={() => handleTopicChange(topic)}
+                variant={!currentTopic ? "secondary" : "ghost"}
+                onClick={() => handleTopicChange(null)}
                 className="text-sm"
               >
-                {topic}
+                All Topics
               </Button>
-            ))}
+              {topics.map((topic) => (
+                <Button
+                  key={topic}
+                  variant={currentTopic === topic ? "secondary" : "ghost"}
+                  onClick={() => handleTopicChange(topic)}
+                  className="text-sm"
+                >
+                  {topic}
+                </Button>
+              ))}
+            </div>
           </div>
 
-          {mode === "personal" && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+              <Users className="h-4 w-4" />
+              <span className="text-sm font-medium">Filter by creator</span>
+              <span className="text-xs text-[var(--text-secondary)] opacity-75">
+                {mode === "community"
+                  ? "• See decks created by you or others in the community"
+                  : "• See your decks or decks shared by others"}
+              </span>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={currentOwnership === "all" ? "secondary" : "ghost"}
                 onClick={() => handleOwnershipChange("all")}
                 className="text-sm"
               >
-                All Decks
+                Everyone
               </Button>
               <Button
                 variant={currentOwnership === "my" ? "secondary" : "ghost"}
                 onClick={() => handleOwnershipChange("my")}
                 className="text-sm"
               >
-                My Decks
+                By Me
               </Button>
               <Button
-                variant={currentOwnership === "shared" ? "secondary" : "ghost"}
-                onClick={() => handleOwnershipChange("shared")}
+                variant={currentOwnership === "others" ? "secondary" : "ghost"}
+                onClick={() => handleOwnershipChange("others")}
                 className="text-sm"
               >
-                Shared with Me
+                By Others
               </Button>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Decks Grid */}
