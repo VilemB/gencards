@@ -73,6 +73,9 @@ export default function CreateDeckPage() {
   const [description, setDescription] = useState("");
   const [topic, setTopic] = useState(initialTopic);
   const [isPublic, setIsPublic] = useState(false);
+  const [selectedParentDeckId, setSelectedParentDeckId] = useState<
+    string | null
+  >(parentDeckId);
   const [parentDeck, setParentDeck] = useState<Deck | null>(null);
   const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,10 +83,10 @@ export default function CreateDeckPage() {
 
   useEffect(() => {
     async function loadParentDeck() {
-      if (!parentDeckId) return;
+      if (!selectedParentDeckId) return;
 
       try {
-        const response = await fetch(`/api/decks/${parentDeckId}`);
+        const response = await fetch(`/api/decks/${selectedParentDeckId}`);
         if (!response.ok) {
           throw new Error("Failed to load parent deck");
         }
@@ -95,7 +98,7 @@ export default function CreateDeckPage() {
     }
 
     loadParentDeck();
-  }, [parentDeckId]);
+  }, [selectedParentDeckId]);
 
   useEffect(() => {
     async function loadParentDecks() {
@@ -130,7 +133,7 @@ export default function CreateDeckPage() {
           description,
           topic,
           isPublic,
-          parentDeckId: parentDeckId,
+          parentDeckId: selectedParentDeckId,
         }),
       });
 
@@ -270,8 +273,10 @@ export default function CreateDeckPage() {
               </label>
               <select
                 id="parentDeck"
-                value={parentDeckId || ""}
-                onChange={(e) => setParentDeckId(e.target.value || null)}
+                value={selectedParentDeckId || ""}
+                onChange={(e) =>
+                  setSelectedParentDeckId(e.target.value || null)
+                }
                 className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               >
                 <option value="">No Parent (Top-Level Deck)</option>
