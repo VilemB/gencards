@@ -3,34 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Filter,
-  Play,
-  Search,
-  Plus,
-  User,
-  Users,
-  Book,
-  Star,
-  Clock,
-} from "lucide-react";
+import { Search, Plus, Users, Book, Star, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/useDebounce";
 import { LoadingState } from "@/components/ui/LoadingState";
-
-interface Deck {
-  _id: string;
-  title: string;
-  description: string;
-  topic: string;
-  cardCount: number;
-  userId: string;
-  createdAt: string;
-  parentDeckId: string | null;
-  path: string;
-  level: number;
-  hasChildren: boolean;
-}
+import { DeckCard } from "@/components/DeckCard";
+import { Deck } from "@/types/deck";
 
 interface DecksContentProps {
   mode?: "personal" | "community";
@@ -248,165 +226,81 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-[var(--neutral-50)] rounded-xl p-6 mb-8">
-          <div className="space-y-6">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
-              <input
-                type="text"
-                placeholder="Search decks by title or description..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              />
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-6">
-              {/* Ownership Filter - Only show in personal mode */}
-              {mode === "personal" && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-[var(--text-secondary)]">
-                    Filter by Ownership
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={
-                        currentOwnership === "all" ? "default" : "outline"
-                      }
-                      onClick={() => handleOwnershipChange("all")}
-                      className="gap-2"
-                    >
-                      <Users className="h-4 w-4" />
-                      All Decks
-                    </Button>
-                    <Button
-                      variant={
-                        currentOwnership === "my" ? "default" : "outline"
-                      }
-                      onClick={() => handleOwnershipChange("my")}
-                      className="gap-2"
-                    >
-                      <User className="h-4 w-4" />
-                      By You
-                    </Button>
-                    <Button
-                      variant={
-                        currentOwnership === "others" ? "default" : "outline"
-                      }
-                      onClick={() => handleOwnershipChange("others")}
-                      className="gap-2"
-                    >
-                      <Users className="h-4 w-4" />
-                      By Others
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Topic Filter */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-[var(--text-secondary)]">
-                  Filter by Topic
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={!currentTopic ? "default" : "outline"}
-                    onClick={() => handleTopicChange(null)}
-                    className="gap-2"
-                  >
-                    <Filter className="h-4 w-4" />
-                    All Topics
-                  </Button>
-                  {topics.map((topic) => (
-                    <Button
-                      key={topic}
-                      variant={currentTopic === topic ? "default" : "outline"}
-                      onClick={() => handleTopicChange(topic)}
-                    >
-                      {topic}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
+        {/* Filters Section */}
+        <div className="mb-8 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search decks..."
+              className="w-full pl-10 pr-4 py-2 rounded-lg bg-[var(--neutral-50)] border border-[var(--neutral-200)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            />
           </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={!currentTopic ? "secondary" : "ghost"}
+              onClick={() => handleTopicChange(null)}
+              className="text-sm"
+            >
+              All Topics
+            </Button>
+            {topics.map((topic) => (
+              <Button
+                key={topic}
+                variant={currentTopic === topic ? "secondary" : "ghost"}
+                onClick={() => handleTopicChange(topic)}
+                className="text-sm"
+              >
+                {topic}
+              </Button>
+            ))}
+          </div>
+
+          {mode === "personal" && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={currentOwnership === "all" ? "secondary" : "ghost"}
+                onClick={() => handleOwnershipChange("all")}
+                className="text-sm"
+              >
+                All Decks
+              </Button>
+              <Button
+                variant={currentOwnership === "my" ? "secondary" : "ghost"}
+                onClick={() => handleOwnershipChange("my")}
+                className="text-sm"
+              >
+                My Decks
+              </Button>
+              <Button
+                variant={currentOwnership === "shared" ? "secondary" : "ghost"}
+                onClick={() => handleOwnershipChange("shared")}
+                className="text-sm"
+              >
+                Shared with Me
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Decks Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {organizedDecks.map((deck) => (
-            <div
+            <DeckCard
               key={deck._id}
-              style={{ marginLeft: `${deck.level * 1}rem` }}
-              className={`relative bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200 ${
-                deck.hasChildren ? "border-l-4 border-[var(--primary)]" : ""
-              }`}
-            >
-              <div className="flex flex-col h-full">
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1 line-clamp-2">
-                        {deck.title}
-                      </h3>
-                      <p className="text-sm text-[var(--text-secondary)] line-clamp-2">
-                        {deck.description}
-                      </p>
-                    </div>
-                    {mode === "personal" && (
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0"
-                      >
-                        <Link href={`/decks/${deck._id}/study`}>
-                          <Play className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
-                    <span>{deck.cardCount} cards</span>
-                    <span>•</span>
-                    <span>{deck.topic}</span>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-[var(--neutral-200)]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {mode === "community" ? (
-                        <User className="h-4 w-4 text-[var(--text-secondary)]" />
-                      ) : (
-                        <Filter className="h-4 w-4 text-[var(--text-secondary)]" />
-                      )}
-                      <span className="text-sm text-[var(--text-secondary)]">
-                        {new Date(deck.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {mode === "personal" && (
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/decks/${deck._id}/edit`}>Edit</Link>
-                        </Button>
-                      )}
-                      <Button
-                        asChild
-                        variant={mode === "community" ? "default" : "outline"}
-                        size="sm"
-                      >
-                        <Link href={`/decks/${deck._id}`}>
-                          {mode === "community" ? "View Deck" : "Details"}
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              deck={deck}
+              showActions={true}
+              onDelete={
+                mode === "personal"
+                  ? () => {
+                      // Implement delete functionality
+                    }
+                  : undefined
+              }
+            />
           ))}
         </div>
       </div>
