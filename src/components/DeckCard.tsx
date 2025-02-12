@@ -10,11 +10,7 @@ interface DeckCardProps {
   showActions?: boolean;
 }
 
-export function DeckCard({
-  deck,
-  onDelete,
-  showActions = true,
-}: DeckCardProps) {
+export function DeckCard({ deck, showActions = true }: DeckCardProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const isOwner = session?.user?.id === deck.userId;
