@@ -184,9 +184,14 @@ export default function StudyClient({ deckId }: Props) {
         });
       }
 
-      // If not the last card, proceed to next
+      // If not the last card, proceed to next after a delay
       if (!isLastCard) {
-        handleNext();
+        // First reset the card to front face
+        setIsFlipped(false);
+        // Wait for the flip animation to complete before moving to next card
+        setTimeout(() => {
+          handleNext();
+        }, 300); // Half of the flip animation duration
       }
     },
     [cardStartTime, currentCardIndex, deck, handleNext, handleCompletion]

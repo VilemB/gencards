@@ -47,8 +47,8 @@ export async function POST(req: Request) {
         // Studied consecutive days, increment streak
         newStreak = (user.streak || 0) + 1;
       } else {
-        // Missed a day, reset streak
-        newStreak = 1;
+        // Missed a day, reset streak to 0
+        newStreak = 0;
       }
     }
 
