@@ -57,7 +57,17 @@ export async function GET(req: Request) {
     }
 
     const decks = await Deck.find(query)
-      .select("title description topic cardCount userId createdAt")
+      .select(
+        "title description topic cardCount userId createdAt parentDeckId hasChildren"
+      )
+      .populate({
+        path: "parentDeckId",
+        select: "title parentDeckId",
+        populate: {
+          path: "parentDeckId",
+          select: "title parentDeckId",
+        },
+      })
       .sort({ createdAt: -1 });
 
     // Get unique topics
@@ -82,7 +92,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { title, description, topic, isPublic } = await req.json();
+    const { title, description, topic, isPublic, parentDeckId } =
+      await req.json();
 
     // Validate required fields
     if (!title || !description || !topic) {
@@ -97,6 +108,23 @@ export async function POST(req: Request) {
     // Capitalize the first letter of the topic
     const capitalizedTopic = topic.charAt(0).toUpperCase() + topic.slice(1);
 
+    // If parentDeckId is provided, verify it exists and update its hasChildren flag
+    if (parentDeckId) {
+      const parentDeck = await Deck.findById(parentDeckId);
+      if (!parentDeck) {
+        return NextResponse.json(
+          { message: "Parent deck not found" },
+          { status: 404 }
+        );
+      }
+
+      // Update parent deck's hasChildren flag
+      if (!parentDeck.hasChildren) {
+        parentDeck.hasChildren = true;
+        await parentDeck.save();
+      }
+    }
+
     const deck = await Deck.create({
       userId: session.user.id,
       title,
@@ -104,6 +132,8 @@ export async function POST(req: Request) {
       topic: capitalizedTopic,
       isPublic: isPublic || false,
       cardCount: 0,
+      parentDeckId: parentDeckId || null,
+      hasChildren: false,
     });
 
     return NextResponse.json(deck);

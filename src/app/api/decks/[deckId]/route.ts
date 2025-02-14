@@ -20,7 +20,15 @@ export async function GET(
       return new NextResponse("Invalid deck ID", { status: 400 });
     }
 
-    const deck = await Deck.findById(deckId);
+    const deck = await Deck.findById(deckId).populate({
+      path: "parentDeckId",
+      select: "title parentDeckId",
+      populate: {
+        path: "parentDeckId",
+        select: "title",
+      },
+    });
+
     if (!deck) {
       return new NextResponse("Deck not found", { status: 404 });
     }
@@ -28,13 +36,6 @@ export async function GET(
     // Check if user has access to this deck
     if (!deck.isPublic && (!session || session.user.id !== deck.userId)) {
       return new NextResponse("Unauthorized", { status: 403 });
-    }
-
-    // Ensure path is initialized
-    if (!deck.path) {
-      deck.path = `/${deck._id}`;
-      deck.level = 0;
-      await deck.save();
     }
 
     return NextResponse.json(deck);
@@ -73,7 +74,29 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 403 });
     }
 
+    // Find and delete all child decks
+    await Deck.deleteMany({
+      parentDeckId: deckId,
+      userId: session.user.id,
+    });
+
+    // Delete the deck itself
     await deck.deleteOne();
+
+    // If this deck has a parent, check if the parent has other children
+    if (deck.parentDeckId) {
+      const siblingCount = await Deck.countDocuments({
+        parentDeckId: deck.parentDeckId,
+      });
+
+      // If this was the last child, update parent's hasChildren flag
+      if (siblingCount === 0) {
+        await Deck.findByIdAndUpdate(deck.parentDeckId, {
+          hasChildren: false,
+        });
+      }
+    }
+
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("[DECK_DELETE]", error);

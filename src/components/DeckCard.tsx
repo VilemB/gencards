@@ -1,8 +1,8 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Book, Edit, Play } from "lucide-react";
+import { Book, Edit, Play, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Deck } from "@/types/deck";
+import { Deck, PopulatedDeck } from "@/types/deck";
 
 interface DeckCardProps {
   deck: Deck;
@@ -14,6 +14,7 @@ export function DeckCard({ deck, showActions = true }: DeckCardProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const isOwner = session?.user?.id === deck.userId;
+  const parentDeck = deck.parentDeckId as PopulatedDeck;
 
   return (
     <div
@@ -23,9 +24,17 @@ export function DeckCard({ deck, showActions = true }: DeckCardProps) {
       <div className="flex flex-col h-full min-h-[120px]">
         <div className="flex-1">
           <div className="flex items-start justify-between mb-3">
-            <h3 className="text-lg font-medium text-[var(--text-primary)] line-clamp-1">
-              {deck.title}
-            </h3>
+            <div>
+              <h3 className="text-lg font-medium text-[var(--text-primary)] line-clamp-1">
+                {deck.title}
+              </h3>
+              {parentDeck?.title && (
+                <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)]">
+                  <GitBranch className="h-3 w-3" />
+                  <span>Part of {parentDeck.title}</span>
+                </div>
+              )}
+            </div>
             {showActions && (
               <div className="flex gap-1 -mt-1 -mr-1">
                 {isOwner && (
@@ -58,7 +67,7 @@ export function DeckCard({ deck, showActions = true }: DeckCardProps) {
           <p className="text-sm text-[var(--text-secondary)] line-clamp-2 mb-3">
             {deck.description}
           </p>
-          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
             <Book className="h-3.5 w-3.5" />
             <span>{deck.cardCount} cards</span>
             <span>•</span>

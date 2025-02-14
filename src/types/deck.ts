@@ -6,6 +6,12 @@ export interface Card {
   updatedAt: string;
 }
 
+export interface PopulatedDeck {
+  _id: string;
+  title: string;
+  parentDeckId?: PopulatedDeck;
+}
+
 export interface Deck {
   _id: string;
   userId: string;
@@ -17,7 +23,7 @@ export interface Deck {
   cards: Card[];
   createdAt: string;
   updatedAt: string;
-  parentDeckId?: string;
+  parentDeckId?: string | PopulatedDeck;
   path: string;
   level: number;
   hasChildren: boolean;
