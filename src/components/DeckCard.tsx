@@ -10,11 +10,24 @@ interface DeckCardProps {
   showActions?: boolean;
 }
 
+function getParentChain(deck: PopulatedDeck | undefined): string[] {
+  const titles: string[] = [];
+  let currentDeck = deck;
+
+  while (currentDeck) {
+    titles.unshift(currentDeck.title);
+    currentDeck = currentDeck.parentDeckId;
+  }
+
+  return titles;
+}
+
 export function DeckCard({ deck, showActions = true }: DeckCardProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const isOwner = session?.user?.id === deck.userId;
   const parentDeck = deck.parentDeckId as PopulatedDeck;
+  const parentChain = getParentChain(parentDeck);
 
   return (
     <div
@@ -28,10 +41,10 @@ export function DeckCard({ deck, showActions = true }: DeckCardProps) {
               <h3 className="text-lg font-medium text-[var(--text-primary)] line-clamp-1">
                 {deck.title}
               </h3>
-              {parentDeck?.title && (
+              {parentChain.length > 0 && (
                 <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)]">
                   <GitBranch className="h-3 w-3" />
-                  <span>Part of {parentDeck.title}</span>
+                  <span>Part of: {parentChain.join(" → ")}</span>
                 </div>
               )}
             </div>
