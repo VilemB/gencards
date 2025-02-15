@@ -23,10 +23,74 @@ import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
 import { motion } from "framer-motion";
 import { Deck } from "@/types/deck";
 import { CardPreviewModal } from "@/components/ui/CardPreviewModal";
+import { useHotkeys } from "react-hotkeys-hook";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   deckId: string;
   deck: Deck;
+}
+
+interface CardPreviewProps {
+  question: string;
+  onClick: () => void;
+  index: number;
+}
+
+function CardPreview({ question, onClick, index }: CardPreviewProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className={cn(
+        "group relative overflow-hidden",
+        "bg-card hover:bg-accent/50 transition-colors",
+        "border border-border rounded-xl",
+        "shadow-sm hover:shadow-md"
+      )}
+      style={{
+        animationDelay: `${index * 50}ms`,
+      }}
+    >
+      <div
+        onClick={onClick}
+        className={cn(
+          "p-6 cursor-pointer",
+          "transition-all duration-200",
+          "hover:translate-y-[-2px]"
+        )}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+      >
+        <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
+          <div
+            dangerouslySetInnerHTML={{ __html: question }}
+            className="line-clamp-3"
+          />
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Eye className="h-4 w-4" />
+          <span>Click to preview (Space to flip)</span>
+        </div>
+      </div>
+      <div
+        className={cn(
+          "absolute inset-x-0 bottom-0 h-[2px]",
+          "bg-gradient-to-r from-primary/40 via-primary to-primary/40",
+          "transform scale-x-0 group-hover:scale-x-100",
+          "transition-transform duration-200"
+        )}
+      />
+    </motion.div>
+  );
 }
 
 export default function DeckClient({ deckId, deck: initialDeck }: Props) {
@@ -40,6 +104,8 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   const [showShareToast, setShowShareToast] = useState(false);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function loadDeck() {
@@ -119,17 +185,46 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[var(--background)] to-[var(--neutral-50)]">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[var(--primary)] mx-auto mb-4" />
-          <p className="text-[var(--text-secondary)] animate-pulse">
-            Loading deck...
-          </p>
+  // Keyboard shortcuts
+  useHotkeys("ctrl+f", (e) => {
+    e.preventDefault();
+    setIsSearchOpen(true);
+  });
+
+  useHotkeys("esc", () => {
+    if (isSearchOpen) setIsSearchOpen(false);
+    if (selectedCard !== null) handleClosePreview();
+  });
+
+  useHotkeys("space", (e) => {
+    e.preventDefault();
+    if (selectedCard !== null) handleFlipCard();
+  });
+
+  useHotkeys("left", () => {
+    if (selectedCard !== null) handlePreviousCard();
+  });
+
+  useHotkeys("right", () => {
+    if (selectedCard !== null) handleNextCard();
+  });
+
+  // Loading skeleton component
+  const LoadingSkeleton = () => (
+    <div className="min-h-screen bg-[var(--background)] p-8">
+      <div className="max-w-7xl mx-auto">
+        <Skeleton className="h-48 w-full rounded-2xl mb-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
         </div>
       </div>
-    );
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
   }
 
   if (error || !deck) {
@@ -164,8 +259,12 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-8 mb-8">
+        {/* Enhanced Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-8 mb-8"
+        >
           <div className="relative z-10">
             <DeckBreadcrumb
               deckId={deck._id}
@@ -274,11 +373,36 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
           </div>
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 via-transparent to-indigo-700/30" />
-        </div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
+        </motion.div>
 
-        {/* Empty State */}
+        {/* Search Bar (appears when ctrl+f is pressed) */}
+        {isSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="sticky top-4 z-50 mb-4"
+          >
+            <div className="relative max-w-2xl mx-auto">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search cards... (ESC to close)"
+                className="w-full px-4 py-3 rounded-lg bg-white shadow-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                autoFocus
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Empty State with Enhanced Animation */}
         {deck.cards.length === 0 ? (
-          <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl border border-gray-200/50 dark:border-gray-700/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl border border-gray-200/50 dark:border-gray-700/50"
+          >
             <div className="relative z-10 text-center py-20 px-4">
               <div className="w-20 h-20 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Book className="h-10 w-10 text-blue-500" />
@@ -307,42 +431,49 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/10 to-transparent" />
             <div className="absolute -left-6 -top-6 w-24 h-24 blur-2xl bg-blue-500/20 rounded-full" />
             <div className="absolute -right-6 -bottom-6 w-24 h-24 blur-2xl bg-indigo-500/20 rounded-full" />
-          </div>
+            <motion.div
+              className="absolute inset-0 opacity-30"
+              animate={{
+                backgroundPosition: ["0% 0%", "100% 100%"],
+              }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                repeatType: "reverse",
+              }}
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at center, rgba(59, 130, 246, 0.8) 0%, transparent 70%)",
+              }}
+            />
+          </motion.div>
         ) : (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4"
           >
-            {deck.cards.map((card, index) => (
-              <motion.div
-                key={card._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ scale: 1.02 }}
-                className="group relative bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
-              >
-                <div
-                  className="p-6 cursor-pointer"
+            {deck.cards
+              .filter((card) =>
+                searchQuery
+                  ? card.front
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase()) ||
+                    card.back.toLowerCase().includes(searchQuery.toLowerCase())
+                  : true
+              )
+              .map((card, index) => (
+                <CardPreview
+                  key={card._id}
+                  question={card.front}
                   onClick={() => handleCardClick(index)}
-                >
-                  <div
-                    className="prose prose-sm max-w-none mb-4"
-                    dangerouslySetInnerHTML={{ __html: card.front }}
-                  />
-                  <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                    <Eye className="h-4 w-4" />
-                    <span>Click to preview</span>
-                  </div>
-                </div>
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
-              </motion.div>
-            ))}
+                  index={index}
+                />
+              ))}
           </motion.div>
         )}
 
-        {/* Card Preview Modal */}
+        {/* Enhanced Card Preview Modal */}
         {selectedCard !== null && deck?.cards[selectedCard] && (
           <CardPreviewModal
             isOpen={selectedCard !== null}
@@ -355,6 +486,12 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
             onFlip={handleFlipCard}
             onPrevious={handlePreviousCard}
             onNext={handleNextCard}
+            shortcuts={{
+              flip: "Space",
+              next: "→",
+              previous: "←",
+              close: "Esc",
+            }}
           />
         )}
 

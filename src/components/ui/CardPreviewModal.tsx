@@ -1,10 +1,12 @@
 import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
-import { Button } from "./button";
+import { Button } from "@/components/ui/button";
+import { X, Maximize2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
-interface CardPreviewModalProps {
+export interface CardPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentCard: number;
@@ -15,6 +17,12 @@ interface CardPreviewModalProps {
   onFlip: () => void;
   onPrevious: () => void;
   onNext: () => void;
+  shortcuts?: {
+    flip: string;
+    next: string;
+    previous: string;
+    close: string;
+  };
 }
 
 export function CardPreviewModal({
@@ -28,7 +36,29 @@ export function CardPreviewModal({
   onFlip,
   onPrevious,
   onNext,
+  shortcuts,
 }: CardPreviewModalProps) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Handle fullscreen
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  // Clean up fullscreen on close
+  useEffect(() => {
+    if (!isOpen && document.fullscreenElement) {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, [isOpen]);
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -41,11 +71,11 @@ export function CardPreviewModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -55,104 +85,162 @@ export function CardPreviewModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-[var(--background)] shadow-xl transition-all">
-                {/* Header */}
-                <div className="flex justify-between items-center px-6 py-4 border-b border-[var(--neutral-200)]">
-                  <Dialog.Title className="text-lg font-semibold text-[var(--text-primary)]">
-                    Card {currentCard + 1} of {totalCards}
-                  </Dialog.Title>
-                  <button
-                    onClick={onClose}
-                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors rounded-full p-1 hover:bg-[var(--neutral-100)]"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
+              <Dialog.Panel
+                className={cn(
+                  "w-full transform overflow-hidden bg-card shadow-2xl transition-all",
+                  "border border-border rounded-2xl",
+                  isFullscreen
+                    ? "max-w-none h-screen rounded-none"
+                    : "max-w-4xl"
+                )}
+              >
+                <div
+                  className={cn(
+                    "relative flex flex-col",
+                    isFullscreen ? "h-screen" : "min-h-[80vh]"
+                  )}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                    <div className="flex items-center gap-3">
+                      <Dialog.Title className="text-lg font-medium text-foreground">
+                        Card {currentCard + 1} of {totalCards}
+                      </Dialog.Title>
+                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+                      <div className="text-sm text-muted-foreground font-medium">
+                        {isFlipped ? "Answer" : "Question"}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleFullscreen}
+                        className="text-muted-foreground hover:text-foreground"
+                        title={
+                          isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                        }
+                      >
+                        <Maximize2 className="h-5 w-5" />
+                      </Button>
+                      <button
+                        onClick={onClose}
+                        className="text-muted-foreground hover:text-foreground transition-colors rounded-lg p-2 hover:bg-muted"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
 
-                {/* Card Content */}
-                <div className="p-6">
-                  <div
-                    className="relative w-full aspect-[3/2] perspective-1000 cursor-pointer"
-                    onClick={onFlip}
-                  >
-                    <motion.div
-                      className="w-full h-full preserve-3d"
-                      animate={{ rotateY: isFlipped ? 180 : 0 }}
-                      transition={{
-                        duration: 0.6,
-                        type: "spring",
-                        stiffness: 100,
+                  {/* Card Content */}
+                  <div className="flex-1 p-8 flex items-center justify-center bg-gradient-to-b from-muted/50 to-transparent">
+                    <div
+                      className={cn(
+                        "w-full max-w-2xl mx-auto rounded-xl cursor-pointer",
+                        "transition-all duration-300 ease-in-out transform",
+                        "hover:shadow-lg hover:-translate-y-1",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      )}
+                      onClick={onFlip}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Card content. Press ${
+                        shortcuts?.flip || "Space"
+                      } to flip`}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onFlip();
+                        }
                       }}
                     >
-                      {/* Front */}
-                      <div
-                        className={`absolute w-full h-full backface-hidden ${
-                          isFlipped ? "invisible" : "visible"
-                        }`}
-                      >
-                        <div className="h-full flex flex-col items-center justify-center bg-[var(--neutral-50)] rounded-xl p-8 border border-[var(--neutral-200)]">
-                          <div
-                            className="prose prose-lg max-w-none"
-                            dangerouslySetInnerHTML={{ __html: front }}
-                          />
-                          <button
-                            className="absolute bottom-4 right-4 btn-ghost rounded-full p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--neutral-100)]"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onFlip();
-                            }}
-                          ></button>
-                        </div>
-                      </div>
-
-                      {/* Back */}
-                      <div
-                        className={`absolute w-full h-full backface-hidden rotate-y-180 ${
-                          isFlipped ? "visible" : "invisible"
-                        }`}
-                      >
-                        <div className="h-full flex flex-col items-center justify-center bg-[var(--neutral-50)] rounded-xl p-8 border border-[var(--neutral-200)]">
-                          <div
-                            className="prose prose-lg max-w-none"
-                            dangerouslySetInnerHTML={{ __html: back }}
-                          />
-                          <button
-                            className="absolute bottom-4 right-4 btn-ghost rounded-full p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--neutral-100)]"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onFlip();
-                            }}
-                          ></button>
-                        </div>
-                      </div>
-                    </motion.div>
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={isFlipped ? "back" : "front"}
+                          initial={{ rotateX: -90, opacity: 0 }}
+                          animate={{ rotateX: 0, opacity: 1 }}
+                          exit={{ rotateX: 90, opacity: 0 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                          className={cn(
+                            "prose prose-lg dark:prose-invert max-w-none",
+                            "p-8 rounded-xl bg-card/80 backdrop-blur-sm",
+                            "border border-border",
+                            "shadow-[0_0_30px_rgba(0,0,0,0.1)]"
+                          )}
+                          dangerouslySetInnerHTML={{
+                            __html: isFlipped ? back : front,
+                          }}
+                        />
+                      </AnimatePresence>
+                      {shortcuts?.flip && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.2 }}
+                          className="text-center mt-6 text-sm text-muted-foreground"
+                        >
+                          Press {shortcuts.flip} to flip
+                        </motion.div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="text-center text-sm text-[var(--text-secondary)] mt-4">
-                    Click card to flip
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-[var(--neutral-50)] border-t border-[var(--neutral-200)]">
-                  <div className="flex justify-between gap-4">
+                  {/* Footer */}
+                  <div className="flex items-center justify-between p-6 border-t border-border bg-muted/50">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       onClick={onPrevious}
                       disabled={currentCard === 0}
-                      className="flex-1 gap-2"
+                      className={cn(
+                        "gap-2",
+                        "hover:bg-muted",
+                        "disabled:opacity-50 disabled:cursor-not-allowed"
+                      )}
+                      aria-label="Previous card"
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      {shortcuts?.previous && (
+                        <kbd className="ml-2 text-xs bg-muted px-2 py-1 rounded border border-border">
+                          {shortcuts.previous}
+                        </kbd>
+                      )}
                       Previous
                     </Button>
+                    <div className="flex items-center gap-4">
+                      <div className="flex gap-1.5">
+                        {[...Array(totalCards)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "rounded-full transition-all duration-300",
+                              i === currentCard
+                                ? "w-6 h-1.5 bg-primary"
+                                : "w-1.5 h-1.5 bg-gray-400"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       onClick={onNext}
                       disabled={currentCard === totalCards - 1}
-                      className="flex-1 gap-2"
+                      className={cn(
+                        "gap-2",
+                        "hover:bg-muted",
+                        "disabled:opacity-50 disabled:cursor-not-allowed"
+                      )}
+                      aria-label="Next card"
                     >
                       Next
-                      <ChevronRight className="h-4 w-4" />
+                      {shortcuts?.next && (
+                        <kbd className="ml-2 text-xs bg-muted px-2 py-1 rounded border border-border">
+                          {shortcuts.next}
+                        </kbd>
+                      )}
                     </Button>
                   </div>
                 </div>

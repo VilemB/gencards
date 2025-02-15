@@ -150,10 +150,10 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header with Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] p-8 mb-8 text-white">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-primary-dark p-8 mb-8 text-white">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -221,7 +221,7 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
             <div
               className="absolute inset-0"
               style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2V6h4V4H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
                 backgroundSize: "30px 30px",
               }}
             />
@@ -231,26 +231,26 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
         {/* Filters Section */}
         <div className="mb-8 space-y-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Search className="h-4 w-4" />
               <span className="text-sm font-medium">
                 Search by title or description
               </span>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Search decks..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg bg-[var(--neutral-50)] border border-[var(--neutral-200)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                className="w-full pl-10 pr-4 py-2 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Book className="h-4 w-4" />
               <span className="text-sm font-medium">Filter by topic</span>
             </div>
@@ -276,10 +276,10 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Users className="h-4 w-4" />
               <span className="text-sm font-medium">Filter by creator</span>
-              <span className="text-xs text-[var(--text-secondary)] opacity-75">
+              <span className="text-xs text-muted-foreground/75">
                 {mode === "community"
                   ? "• See decks created by you or others in the community"
                   : "• See your decks or decks shared by others"}
