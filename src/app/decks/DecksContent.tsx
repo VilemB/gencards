@@ -153,14 +153,14 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
     <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header with Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-[var(--gradient-primary)] p-8 mb-8 text-white">
-          <div className="relative z-10">
+        <div className="header-gradient">
+          <div className="header-content">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-bold mb-2">
+                <h1 className="text-3xl font-bold mb-2 animate-fade-in">
                   {mode === "community" ? "Community Decks" : "Your Decks"}
                 </h1>
-                <p className="text-white/80">
+                <p className="text-white/80 animate-fade-in-delayed">
                   {mode === "community"
                     ? "Discover and learn from decks shared by the community"
                     : "Manage and study your flashcard collections"}
@@ -169,7 +169,7 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
               {mode === "personal" ? (
                 <Button
                   asChild
-                  className="bg-white/90 hover:bg-white text-[var(--primary)] border-0 shadow-md"
+                  className="bg-white/90 hover:bg-white text-[var(--primary)] border-0 shadow-md animate-slide-up"
                 >
                   <Link href="/decks/create" className="gap-2">
                     <Plus className="h-4 w-4" />
@@ -177,27 +177,27 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
                   </Link>
                 </Button>
               ) : (
-                <div className="p-3 bg-white/10 rounded-xl">
+                <div className="p-3 bg-white/10 rounded-xl animate-slide-up">
                   <Users className="h-8 w-8" />
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up-delayed">
+              <div className="header-stat">
                 <div className="flex items-center gap-3 mb-2">
                   <Book className="h-5 w-5" />
                   <h3 className="font-medium">Total Decks</h3>
                 </div>
                 <p className="text-2xl font-bold">{decks.length}</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+              <div className="header-stat">
                 <div className="flex items-center gap-3 mb-2">
                   <Star className="h-5 w-5" />
                   <h3 className="font-medium">Topics</h3>
                 </div>
                 <p className="text-2xl font-bold">{topics.length}</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+              <div className="header-stat">
                 <div className="flex items-center gap-3 mb-2">
                   {mode === "community" ? (
                     <Users className="h-5 w-5" />
@@ -217,19 +217,11 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
             </div>
           </div>
           {/* Decorative background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                backgroundSize: "30px 30px",
-              }}
-            />
-          </div>
+          <div className="header-pattern" />
         </div>
 
         {/* Filters Section */}
-        <div className="mb-8 space-y-6">
+        <div className="mb-8 space-y-6 animate-slide-up-more-delayed">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-[var(--text-secondary)]">
               <Search className="h-4 w-4" />
@@ -312,7 +304,7 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
         </div>
 
         {/* Decks Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in-up">
           {organizedDecks.map((deck) => (
             <DeckCard
               key={deck._id}

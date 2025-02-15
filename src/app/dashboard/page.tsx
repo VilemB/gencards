@@ -77,20 +77,20 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Welcome Header with Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] p-8 mb-8 text-white">
-          <div className="relative z-10">
+        <div className="header-gradient">
+          <div className="header-content">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-3xl font-bold mb-2">
+                <h1 className="text-3xl font-bold mb-2 animate-fade-in">
                   Welcome back, {userData?.name || session?.user?.name}!
                 </h1>
-                <p className="text-white/80">
+                <p className="text-white/80 animate-fade-in-delayed">
                   Ready to continue your learning journey?
                 </p>
               </div>
               <Button
                 asChild
-                className="bg-white text-[var(--primary)] hover:bg-white/90"
+                className="bg-white/90 hover:bg-white text-[var(--primary)] border-0 shadow-md animate-slide-up"
               >
                 <Link href="/decks/create" className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -100,15 +100,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {/* Decorative background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                backgroundSize: "30px 30px",
-              }}
-            />
-          </div>
+          <div className="header-pattern" />
         </div>
 
         {/* Stats Grid */}
@@ -117,10 +109,10 @@ export default function DashboardPage() {
             userData?.preferences?.showStreak
               ? "md:grid-cols-3"
               : "md:grid-cols-2"
-          } mb-8`}
+          } mb-8 animate-slide-up-delayed`}
         >
           {/* Total Decks */}
-          <div className="group relative overflow-hidden bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200">
+          <div className="stat-card">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-[var(--primary-light)] rounded-lg">
                 <Book className="h-5 w-5 text-[var(--primary)]" />
@@ -132,11 +124,10 @@ export default function DashboardPage() {
             <p className="text-4xl font-bold text-[var(--text-primary)]">
               {totalDecks}
             </p>
-            <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
           </div>
 
           {/* Cards Mastered */}
-          <div className="group relative overflow-hidden bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200">
+          <div className="stat-card">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-[var(--primary-light)] rounded-lg">
                 <Trophy className="h-5 w-5 text-[var(--primary)]" />
@@ -146,12 +137,11 @@ export default function DashboardPage() {
               </h2>
             </div>
             <p className="text-4xl font-bold text-[var(--text-primary)]">0</p>
-            <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
           </div>
 
           {/* Study Streak */}
           {userData?.preferences?.showStreak && (
-            <div className="group relative overflow-hidden bg-[var(--neutral-50)] rounded-xl p-6 hover:bg-[var(--neutral-100)] transition-all duration-200">
+            <div className="stat-card">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-3 bg-[var(--primary-light)] rounded-lg">
                   <Flame className="h-5 w-5 text-[var(--primary)]" />
@@ -168,13 +158,12 @@ export default function DashboardPage() {
                   {userData?.streak === 1 ? "day" : "days"}
                 </p>
               </div>
-              <div className="absolute inset-0 bg-[var(--primary)] opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
             </div>
           )}
         </div>
 
         {/* Recent Decks */}
-        <div className="bg-[var(--neutral-50)] rounded-xl p-6">
+        <div className="card animate-fade-in-up">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-[var(--text-primary)]">
               Recent Decks
