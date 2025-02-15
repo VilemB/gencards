@@ -71,7 +71,7 @@ export function CardPreviewModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-[var(--background)]/80 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -87,8 +87,9 @@ export function CardPreviewModal({
             >
               <Dialog.Panel
                 className={cn(
-                  "w-full transform overflow-hidden bg-card shadow-2xl transition-all",
-                  "border border-border rounded-2xl",
+                  "w-full transform overflow-hidden transition-all",
+                  "bg-[var(--foreground)] shadow-2xl border border-[var(--neutral-200)]",
+                  "rounded-2xl",
                   isFullscreen
                     ? "max-w-none h-screen rounded-none"
                     : "max-w-4xl"
@@ -101,13 +102,13 @@ export function CardPreviewModal({
                   )}
                 >
                   {/* Header */}
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/50 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
-                      <Dialog.Title className="text-lg font-medium text-foreground">
+                      <Dialog.Title className="text-lg font-medium text-[var(--text-primary)]">
                         Card {currentCard + 1} of {totalCards}
                       </Dialog.Title>
-                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
-                      <div className="text-sm text-muted-foreground font-medium">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[var(--text-secondary)]/30" />
+                      <div className="text-sm text-[var(--text-secondary)] font-medium">
                         {isFlipped ? "Answer" : "Question"}
                       </div>
                     </div>
@@ -116,7 +117,7 @@ export function CardPreviewModal({
                         variant="ghost"
                         size="icon"
                         onClick={toggleFullscreen}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                         title={
                           isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
                         }
@@ -125,7 +126,7 @@ export function CardPreviewModal({
                       </Button>
                       <button
                         onClick={onClose}
-                        className="text-muted-foreground hover:text-foreground transition-colors rounded-lg p-2 hover:bg-muted"
+                        className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors rounded-lg p-2 hover:bg-[var(--neutral-100)]"
                       >
                         <X className="h-5 w-5" />
                       </button>
@@ -133,13 +134,13 @@ export function CardPreviewModal({
                   </div>
 
                   {/* Card Content */}
-                  <div className="flex-1 p-8 flex items-center justify-center bg-gradient-to-b from-muted/50 to-transparent">
+                  <div className="flex-1 p-8 flex items-center justify-center bg-gradient-to-b from-[var(--neutral-50)]/50 to-transparent">
                     <div
                       className={cn(
                         "w-full max-w-2xl mx-auto rounded-xl cursor-pointer",
                         "transition-all duration-300 ease-in-out transform",
                         "hover:shadow-lg hover:-translate-y-1",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                       )}
                       onClick={onFlip}
                       role="button"
@@ -166,10 +167,11 @@ export function CardPreviewModal({
                             damping: 30,
                           }}
                           className={cn(
-                            "prose prose-lg dark:prose-invert max-w-none",
-                            "p-8 rounded-xl bg-card/80 backdrop-blur-sm",
-                            "border border-border",
-                            "shadow-[0_0_30px_rgba(0,0,0,0.1)]"
+                            "prose prose-lg max-w-none",
+                            "p-8 rounded-xl",
+                            "bg-[var(--foreground)] backdrop-blur-sm",
+                            "border border-[var(--neutral-200)]",
+                            "shadow-[0_0_30px_rgba(0,0,0,0.05)]"
                           )}
                           dangerouslySetInnerHTML={{
                             __html: isFlipped ? back : front,
@@ -181,7 +183,7 @@ export function CardPreviewModal({
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.2 }}
-                          className="text-center mt-6 text-sm text-muted-foreground"
+                          className="text-center mt-6 text-sm text-[var(--text-secondary)]"
                         >
                           Press {shortcuts.flip} to flip
                         </motion.div>
@@ -190,20 +192,20 @@ export function CardPreviewModal({
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between p-6 border-t border-border bg-muted/50">
+                  <div className="flex items-center justify-between p-6 border-t border-[var(--neutral-200)] bg-[var(--neutral-50)]/50 backdrop-blur-sm">
                     <Button
                       variant="ghost"
                       onClick={onPrevious}
                       disabled={currentCard === 0}
                       className={cn(
                         "gap-2",
-                        "hover:bg-muted",
+                        "hover:bg-[var(--neutral-100)]",
                         "disabled:opacity-50 disabled:cursor-not-allowed"
                       )}
                       aria-label="Previous card"
                     >
                       {shortcuts?.previous && (
-                        <kbd className="ml-2 text-xs bg-muted px-2 py-1 rounded border border-border">
+                        <kbd className="ml-2 text-xs bg-[var(--neutral-100)] px-2 py-1 rounded border border-[var(--neutral-200)]">
                           {shortcuts.previous}
                         </kbd>
                       )}
@@ -217,8 +219,8 @@ export function CardPreviewModal({
                             className={cn(
                               "rounded-full transition-all duration-300",
                               i === currentCard
-                                ? "w-6 h-1.5 bg-primary"
-                                : "w-1.5 h-1.5 bg-gray-400"
+                                ? "w-6 h-1.5 bg-[var(--primary)]"
+                                : "w-1.5 h-1.5 bg-[var(--neutral-300)]"
                             )}
                           />
                         ))}
@@ -230,14 +232,14 @@ export function CardPreviewModal({
                       disabled={currentCard === totalCards - 1}
                       className={cn(
                         "gap-2",
-                        "hover:bg-muted",
+                        "hover:bg-[var(--neutral-100)]",
                         "disabled:opacity-50 disabled:cursor-not-allowed"
                       )}
                       aria-label="Next card"
                     >
                       Next
                       {shortcuts?.next && (
-                        <kbd className="ml-2 text-xs bg-muted px-2 py-1 rounded border border-border">
+                        <kbd className="ml-2 text-xs bg-[var(--neutral-100)] px-2 py-1 rounded border border-[var(--neutral-200)]">
                           {shortcuts.next}
                         </kbd>
                       )}
