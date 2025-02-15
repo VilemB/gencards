@@ -4,24 +4,23 @@ import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
-  Settings,
   AlertTriangle,
   Bell,
-  Sun,
-  Moon,
-  Monitor,
   Flame,
-  Hash,
-  User,
-  Mail,
-  Trash2,
   Loader2,
+  Mail,
+  Monitor,
+  Moon,
+  Settings,
+  Sun,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Toast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { cn } from "@/lib/utils";
 
 interface SettingsForm {
   name: string;
@@ -165,289 +164,305 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header with Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] p-8 mb-12 text-white">
-          <div className="relative z-10">
+        {/* Header with improved gradient */}
+        <div className="header-gradient mb-12">
+          <div className="header-content">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Settings</h1>
-                <p className="text-white/80">
+                <h1 className="text-3xl font-bold mb-2 animate-fade-in">
+                  Settings
+                </h1>
+                <p className="text-white/90 animate-fade-in-delayed">
                   Customize your learning experience
                 </p>
               </div>
-              <div className="p-3 bg-white/10 rounded-xl">
+              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 animate-slide-up">
                 <Settings className="h-8 w-8" />
               </div>
             </div>
           </div>
-          {/* Decorative background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                backgroundSize: "30px 30px",
-              }}
-            />
-          </div>
+          <div className="header-pattern" />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-12">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Profile Section */}
-          <section>
-            <div className="flex items-center gap-3 mb-6">
-              <User className="h-5 w-5 text-[var(--primary)]" />
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                Profile
-              </h2>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-[var(--text-primary)] mb-2"
-                >
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                  required
-                  disabled={isSaving}
-                />
+          <div className="bg-[var(--foreground)] rounded-xl border border-[var(--neutral-200)] overflow-hidden">
+            <div className="px-6 py-5 border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                  <User className="h-5 w-5 text-[var(--primary)]" />
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Profile
+                </h2>
               </div>
-
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-[var(--text-primary)] mb-2"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium text-[var(--text-primary)] mb-2"
+                  >
+                    Full Name
+                  </label>
                   <input
-                    type="email"
-                    id="email"
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    className="w-full pl-12 pr-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                    type="text"
+                    id="name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
                     required
                     disabled={isSaving}
                   />
                 </div>
+
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-[var(--text-primary)] mb-2"
+                  >
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
+                    <input
+                      type="email"
+                      id="email"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                      required
+                      disabled={isSaving}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </section>
+          </div>
 
           {/* Preferences Section */}
-          <section>
-            <div className="flex items-center gap-3 mb-6">
-              <Settings className="h-5 w-5 text-[var(--primary)]" />
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                Preferences
-              </h2>
-            </div>
-
-            <div className="space-y-6">
-              {/* Daily Reminder */}
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
-                  <Bell className="h-6 w-6 text-[var(--primary)]" />
+          <div className="bg-[var(--foreground)] rounded-xl border border-[var(--neutral-200)] overflow-hidden">
+            <div className="px-6 py-5 border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[var(--primary-light)] rounded-lg">
+                  <Settings className="h-5 w-5 text-[var(--primary)]" />
                 </div>
-                <div className="flex-1">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.preferences.dailyReminder}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          preferences: {
-                            ...form.preferences,
-                            dailyReminder: e.target.checked,
-                          },
-                        })
-                      }
-                      className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
-                      disabled={isSaving}
-                    />
-                    <span className="font-medium text-[var(--text-primary)]">
-                      Daily Reminder
-                    </span>
-                  </label>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    Receive daily reminders to study
-                  </p>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Preferences
+                </h2>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Theme Selection */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-4">
+                  Theme
+                </label>
+                <div className="grid grid-cols-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({
+                        ...form,
+                        preferences: { ...form.preferences, theme: "light" },
+                      });
+                      setTheme("light");
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 p-4 rounded-lg border transition-all",
+                      form.preferences.theme === "light"
+                        ? "border-[var(--primary)] bg-[var(--primary-light)] text-[var(--primary)]"
+                        : "border-[var(--neutral-200)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)]/50"
+                    )}
+                  >
+                    <Sun className="h-5 w-5" />
+                    <span>Light</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({
+                        ...form,
+                        preferences: { ...form.preferences, theme: "dark" },
+                      });
+                      setTheme("dark");
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 p-4 rounded-lg border transition-all",
+                      form.preferences.theme === "dark"
+                        ? "border-[var(--primary)] bg-[var(--primary-light)] text-[var(--primary)]"
+                        : "border-[var(--neutral-200)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)]/50"
+                    )}
+                  >
+                    <Moon className="h-5 w-5" />
+                    <span>Dark</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({
+                        ...form,
+                        preferences: { ...form.preferences, theme: "system" },
+                      });
+                      setTheme("system");
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 p-4 rounded-lg border transition-all",
+                      form.preferences.theme === "system"
+                        ? "border-[var(--primary)] bg-[var(--primary-light)] text-[var(--primary)]"
+                        : "border-[var(--neutral-200)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)]/50"
+                    )}
+                  >
+                    <Monitor className="h-5 w-5" />
+                    <span>System</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Show Streak */}
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
-                  <Flame className="h-6 w-6 text-[var(--primary)]" />
-                </div>
-                <div className="flex-1">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.preferences.showStreak}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          preferences: {
-                            ...form.preferences,
-                            showStreak: e.target.checked,
-                          },
-                        })
-                      }
-                      className="rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
-                      disabled={isSaving}
-                    />
-                    <span className="font-medium text-[var(--text-primary)]">
-                      Show Streak
-                    </span>
-                  </label>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    Display your study streak on the dashboard
-                  </p>
+              {/* Study Preferences */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-4">
+                  Study Preferences
+                </label>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)]">
+                    <div className="flex items-center gap-3">
+                      <Bell className="h-5 w-5 text-[var(--text-secondary)]" />
+                      <span className="text-[var(--text-primary)]">
+                        Daily Reminder
+                      </span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.preferences.dailyReminder}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            preferences: {
+                              ...form.preferences,
+                              dailyReminder: e.target.checked,
+                            },
+                          })
+                        }
+                        className="sr-only peer"
+                        disabled={isSaving}
+                      />
+                      <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-light)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)]">
+                    <div className="flex items-center gap-3">
+                      <Flame className="h-5 w-5 text-[var(--text-secondary)]" />
+                      <span className="text-[var(--text-primary)]">
+                        Show Streak
+                      </span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.preferences.showStreak}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            preferences: {
+                              ...form.preferences,
+                              showStreak: e.target.checked,
+                            },
+                          })
+                        }
+                        className="sr-only peer"
+                        disabled={isSaving}
+                      />
+                      <div className="w-11 h-6 bg-[var(--neutral-200)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--primary-light)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                    </label>
+                  </div>
                 </div>
               </div>
 
               {/* Cards Per Day */}
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
-                  <Hash className="h-6 w-6 text-[var(--primary)]" />
-                </div>
-                <div className="flex-1">
-                  <label
-                    htmlFor="cardsPerDay"
-                    className="block font-medium text-[var(--text-primary)] mb-1"
-                  >
-                    Cards Per Day
-                  </label>
-                  <select
-                    id="cardsPerDay"
-                    value={form.preferences.cardsPerDay}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        preferences: {
-                          ...form.preferences,
-                          cardsPerDay: parseInt(e.target.value),
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                    disabled={isSaving}
-                  >
-                    {CARDS_PER_DAY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    Number of cards to study per day
-                  </p>
-                </div>
-              </div>
-
-              {/* Theme */}
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[var(--neutral-50)] rounded-lg">
-                  {form.preferences.theme === "light" && (
-                    <Sun className="h-6 w-6 text-[var(--primary)]" />
-                  )}
-                  {form.preferences.theme === "dark" && (
-                    <Moon className="h-6 w-6 text-[var(--primary)]" />
-                  )}
-                  {form.preferences.theme === "system" && (
-                    <Monitor className="h-6 w-6 text-[var(--primary)]" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <label
-                    htmlFor="theme"
-                    className="block font-medium text-[var(--text-primary)] mb-1"
-                  >
-                    Theme
-                  </label>
-                  <select
-                    id="theme"
-                    value={form.preferences.theme}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        preferences: {
-                          ...form.preferences,
-                          theme: e.target.value as "light" | "dark" | "system",
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                    disabled={isSaving}
-                  >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="system">System</option>
-                  </select>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    Choose your preferred theme
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Delete Account Section */}
-          <section className="border-t border-[var(--neutral-200)] pt-8">
-            <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-red-600/90 font-medium flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Delete Account
-                </h3>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">
-                  Permanently delete your account and all associated data
-                </p>
+                <label
+                  htmlFor="cardsPerDay"
+                  className="block text-sm font-medium text-[var(--text-primary)] mb-4"
+                >
+                  Cards Per Day
+                </label>
+                <select
+                  id="cardsPerDay"
+                  value={form.preferences.cardsPerDay}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      preferences: {
+                        ...form.preferences,
+                        cardsPerDay: Number(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full px-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                  disabled={isSaving}
+                >
+                  {CARDS_PER_DAY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isSaving}
-                className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Account
-              </Button>
             </div>
-          </section>
+          </div>
+
+          {/* Account Actions */}
+          <div className="bg-[var(--foreground)] rounded-xl border border-[var(--neutral-200)] overflow-hidden">
+            <div className="px-6 py-5 border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 dark:bg-red-500/10 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Account Actions
+                </h2>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSignOutModal(true)}
+                  className="flex-1"
+                >
+                  Sign Out
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="flex-1"
+                >
+                  Delete Account
+                </Button>
+              </div>
+            </div>
+          </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-[var(--error)] bg-red-50 px-4 py-3 rounded-lg">
+            <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-500/5 p-4 rounded-lg">
               <AlertTriangle className="h-5 w-5 flex-shrink-0" />
               <p className="text-sm">{error}</p>
             </div>
           )}
 
-          <div className="flex justify-end border-t border-[var(--neutral-200)] pt-8">
-            <Button
-              type="submit"
-              disabled={isSaving}
-              size="lg"
-              className="min-w-[160px] relative"
-            >
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSaving} className="min-w-[200px]">
               {isSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
@@ -457,21 +472,13 @@ export default function SettingsPage() {
           </div>
         </form>
 
-        {/* Success Toast */}
-        {showSuccessToast && (
-          <Toast
-            message="Settings saved successfully!"
-            onClose={() => setShowSuccessToast(false)}
-          />
-        )}
-
         {/* Delete Account Modal */}
         <Modal
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
           title="Delete Account"
-          description="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted."
-          confirmText="Delete Account"
+          description="Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data."
+          confirmText={isDeleting ? "Deleting..." : "Delete Account"}
           onConfirm={handleDeleteAccount}
           isDestructive={true}
           isLoading={isDeleting}
@@ -484,8 +491,16 @@ export default function SettingsPage() {
           title="Sign Out"
           description="Are you sure you want to sign out?"
           confirmText="Sign Out"
-          onConfirm={() => signOut()}
+          onConfirm={() => signOut({ callbackUrl: "/" })}
         />
+
+        {/* Success Toast */}
+        {showSuccessToast && (
+          <Toast
+            message="Settings saved successfully!"
+            onClose={() => setShowSuccessToast(false)}
+          />
+        )}
       </div>
     </div>
   );
