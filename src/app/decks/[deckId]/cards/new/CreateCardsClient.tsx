@@ -9,106 +9,11 @@ import { toast } from "sonner";
 import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
 import { Eye, Loader2, Plus, Sparkles } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { AIGenerateModal } from "@/components/AIGenerateModal";
 
 interface Card {
   front: string;
   back: string;
-}
-
-interface AIGenerateModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onGenerate: (topic: string, count: number) => Promise<void>;
-  isLoading: boolean;
-}
-
-function AIGenerateModal({
-  isOpen,
-  onClose,
-  onGenerate,
-  isLoading,
-}: AIGenerateModalProps) {
-  const [topic, setTopic] = useState("");
-  const [count, setCount] = useState(5);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onGenerate(topic, count);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-      <div className="bg-[#1a1a1a] p-6 rounded-lg max-w-md w-full">
-        <h2 className="text-xl font-bold text-white mb-4">
-          Generate Cards with AI
-        </h2>
-        <p className="text-white/70 mb-6">
-          Enter a topic and the number of cards you want to generate.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label
-              htmlFor="topic"
-              className="block text-sm font-medium text-white/70"
-            >
-              Topic
-            </label>
-            <input
-              id="topic"
-              className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white"
-              placeholder="e.g. Basic Verbs in Portuguese"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <label
-              htmlFor="count"
-              className="block text-sm font-medium text-white/70"
-            >
-              Number of Cards
-            </label>
-            <input
-              id="count"
-              type="number"
-              className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white"
-              min={1}
-              max={20}
-              value={count}
-              onChange={(e) => setCount(Number(e.target.value))}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!topic || isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
 }
 
 interface CreateCardsClientProps {
@@ -148,7 +53,11 @@ export default function CreateCardsClient({
     [cards]
   );
 
-  const handleGenerateCards = async (topic: string, count: number) => {
+  const handleGenerateCards = async (
+    topic: string,
+    count: number,
+    createNewDeck: boolean
+  ) => {
     setIsGenerating(true);
     try {
       const response = await fetch("/api/decks/generate", {
@@ -159,7 +68,7 @@ export default function CreateCardsClient({
         body: JSON.stringify({
           topic,
           count,
-          createNewDeck: false,
+          createNewDeck,
         }),
       });
 
@@ -169,6 +78,13 @@ export default function CreateCardsClient({
       }
 
       const data = await response.json();
+
+      if (createNewDeck) {
+        // If a new deck was created, redirect to it
+        router.push(`/decks/${data.deckId}`);
+        router.refresh();
+        return;
+      }
 
       // Validate the response data
       if (!data.cards || !Array.isArray(data.cards)) {
@@ -371,6 +287,7 @@ export default function CreateCardsClient({
           onClose={() => setShowAIModal(false)}
           onGenerate={handleGenerateCards}
           isLoading={isGenerating}
+          deckTitle={deckTitle}
         />
       </div>
     </div>
