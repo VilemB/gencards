@@ -314,9 +314,9 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                     <Button
                       variant="outline"
                       onClick={() => router.push(`/decks/${deckId}/edit`)}
-                      className="glass-card hover:bg-white/20"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
                     <Button
@@ -326,17 +326,17 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                           `/decks/create?parentDeckId=${deckId}&topic=${deck?.topic}`
                         )
                       }
-                      className="glass-card hover:bg-white/20"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4 mr-2" />
                       Add Subdeck
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => setShowDeleteModal(true)}
-                      className="glass-card hover:bg-white/20"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
                   </>
@@ -344,17 +344,17 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 <Button
                   variant="outline"
                   onClick={handleShare}
-                  className="glass-card hover:bg-white/20"
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                 >
-                  <Share className="h-4 w-4" />
+                  <Share className="h-4 w-4 mr-2" />
                   Share
                 </Button>
                 {deck.cards.length > 0 && (
                   <Button
                     onClick={() => router.push(`/decks/${deckId}/study`)}
-                    className="bg-white hover:bg-white/90 text-[var(--primary)] border-0 shadow-md animate-fade-in-up"
+                    className="bg-white hover:bg-white/90 text-[var(--primary)] font-medium shadow-md animate-fade-in-up"
                   >
-                    <Play className="h-4 w-4" />
+                    <Play className="h-4 w-4 mr-2" />
                     Study Now
                   </Button>
                 )}
