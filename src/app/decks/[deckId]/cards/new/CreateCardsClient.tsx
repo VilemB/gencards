@@ -146,7 +146,7 @@ export default function CreateCardsClient({
   const handleGenerateCards = async (topic: string, count: number) => {
     setIsGenerating(true);
     try {
-      const response = await fetch("/api/ai/generate-cards", {
+      const response = await fetch("/api/decks/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +154,7 @@ export default function CreateCardsClient({
         body: JSON.stringify({
           topic,
           count,
-          deckTitle,
+          createNewDeck: false,
         }),
       });
 
@@ -163,6 +163,8 @@ export default function CreateCardsClient({
       }
 
       const data = await response.json();
+
+      // The API returns { cards: flashcards } where flashcards is an array of { front, back }
       setCards(data.cards);
       setShowAIModal(false);
       toast.success(`Generated ${count} cards successfully`);
