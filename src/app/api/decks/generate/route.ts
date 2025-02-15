@@ -47,10 +47,18 @@ Each flashcard should follow these guidelines:
 - Ensure progressive difficulty from basic to advanced concepts
 - Include real-world examples where relevant
 
-Format the output as a JSON object with a "flashcards" array containing objects with "front" and "back" properties.`;
+Return the response in this exact JSON format:
+{
+  "flashcards": [
+    {
+      "front": "question or term",
+      "back": "answer or definition"
+    }
+  ]
+}`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -60,7 +68,6 @@ Format the output as a JSON object with a "flashcards" array containing objects 
         { role: "user", content: prompt },
       ],
       temperature: 0.7,
-      response_format: { type: "json_object" },
     });
 
     const responseText = completion.choices[0].message?.content;
@@ -68,7 +75,20 @@ Format the output as a JSON object with a "flashcards" array containing objects 
       throw new Error("No response from AI model");
     }
 
-    const { flashcards } = JSON.parse(responseText);
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (err) {
+      console.error("Failed to parse AI response:", responseText, err);
+      throw new Error("Invalid JSON response from AI model");
+    }
+
+    if (
+      !parsedResponse.flashcards ||
+      !Array.isArray(parsedResponse.flashcards)
+    ) {
+      throw new Error("Invalid response format from AI model");
+    }
 
     // If createNewDeck is true, create a new deck with these cards
     if (createNewDeck) {
@@ -80,14 +100,14 @@ Format the output as a JSON object with a "flashcards" array containing objects 
         description: `Automatically generated flashcards about ${topic}`,
         topic: topic.charAt(0).toUpperCase() + topic.slice(1),
         userId: session.user.id,
-        cardCount: flashcards.length,
+        cardCount: parsedResponse.flashcards.length,
         isPublic: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
       // Create cards
-      const cards = flashcards.map((card: Flashcard) => ({
+      const cards = parsedResponse.flashcards.map((card: Flashcard) => ({
         deckId: deck._id,
         userId: session.user.id,
         front: card.front,
@@ -101,13 +121,13 @@ Format the output as a JSON object with a "flashcards" array containing objects 
       return NextResponse.json({
         message: "Deck created successfully",
         deckId: deck._id,
-        cards: flashcards,
+        cards: parsedResponse.flashcards,
       });
     }
 
     // Otherwise just return the generated cards
-    return NextResponse.json({ cards: flashcards });
-  } catch (error: Error | unknown) {
+    return NextResponse.json({ cards: parsedResponse.flashcards });
+  } catch (error: unknown) {
     console.error("Error generating flashcards:", error);
     return NextResponse.json(
       {
