@@ -10,9 +10,9 @@ import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
 import { Eye, Loader2, Plus, Sparkles } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
 
-interface CreateCardsClientProps {
-  deckId: string;
-  deckTitle: string;
+interface Card {
+  front: string;
+  back: string;
 }
 
 interface AIGenerateModalProps {
@@ -111,12 +111,17 @@ function AIGenerateModal({
   );
 }
 
+interface CreateCardsClientProps {
+  deckId: string;
+  deckTitle: string;
+}
+
 export default function CreateCardsClient({
   deckId,
   deckTitle,
 }: CreateCardsClientProps) {
   const router = useRouter();
-  const [cards, setCards] = useState([{ front: "", back: "" }]);
+  const [cards, setCards] = useState<Card[]>([{ front: "", back: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -159,17 +164,38 @@ export default function CreateCardsClient({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate cards");
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate cards");
       }
 
       const data = await response.json();
 
-      // The API returns { cards: flashcards } where flashcards is an array of { front, back }
+      // Validate the response data
+      if (!data.cards || !Array.isArray(data.cards)) {
+        throw new Error("Invalid response format from AI generation");
+      }
+
+      // Validate each card has required properties
+      const validCards = data.cards.every(
+        (card: Partial<Card>) =>
+          typeof card.front === "string" &&
+          typeof card.back === "string" &&
+          card.front.trim() !== "" &&
+          card.back.trim() !== ""
+      );
+
+      if (!validCards) {
+        throw new Error("Generated cards are missing required content");
+      }
+
+      // Replace existing cards with generated ones
       setCards(data.cards);
       setShowAIModal(false);
-      toast.success(`Generated ${count} cards successfully`);
-    } catch {
-      toast.error("Failed to generate cards");
+      toast.success(`Generated ${data.cards.length} cards successfully`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate cards"
+      );
     } finally {
       setIsGenerating(false);
     }
