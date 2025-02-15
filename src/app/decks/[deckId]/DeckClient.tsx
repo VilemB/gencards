@@ -263,7 +263,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-8 mb-8"
+          className="relative overflow-hidden rounded-2xl bg-[var(--gradient-primary)] p-8 mb-8"
         >
           <div className="relative z-10">
             <DeckBreadcrumb
@@ -314,7 +314,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                     <Button
                       variant="outline"
                       onClick={() => router.push(`/decks/${deckId}/edit`)}
-                      className="bg-white/10 border-white/10 hover:bg-white/20 text-white gap-2 backdrop-blur-sm"
+                      className="bg-white/10 hover:bg-white/20 text-white border-white/10 shadow-sm backdrop-blur-sm"
                     >
                       <Edit className="h-4 w-4" />
                       Edit
@@ -326,7 +326,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                           `/decks/create?parentDeckId=${deckId}&topic=${deck?.topic}`
                         )
                       }
-                      className="bg-white/10 border-white/10 hover:bg-white/20 text-white gap-2 backdrop-blur-sm"
+                      className="bg-white/10 hover:bg-white/20 text-white border-white/10 shadow-sm backdrop-blur-sm"
                     >
                       <Plus className="h-4 w-4" />
                       Add Subdeck
@@ -334,7 +334,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                     <Button
                       variant="outline"
                       onClick={() => setShowDeleteModal(true)}
-                      className="bg-white/10 border-white/10 hover:bg-white/20 text-white gap-2 backdrop-blur-sm"
+                      className="bg-white/10 hover:bg-white/20 text-white border-white/10 shadow-sm backdrop-blur-sm"
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete
@@ -344,7 +344,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 <Button
                   variant="outline"
                   onClick={handleShare}
-                  className="bg-white/10 border-white/10 hover:bg-white/20 text-white gap-2 backdrop-blur-sm"
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/10 shadow-sm backdrop-blur-sm"
                 >
                   <Share className="h-4 w-4" />
                   Share
@@ -352,7 +352,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 {deck.cards.length > 0 && (
                   <Button
                     onClick={() => router.push(`/decks/${deckId}/study`)}
-                    className="bg-white hover:bg-white/90 text-blue-600 gap-2 shadow-lg"
+                    className="bg-white hover:bg-white/90 text-[var(--primary)] border-0 shadow-md"
                   >
                     <Play className="h-4 w-4" />
                     Study Now
@@ -389,7 +389,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search cards... (ESC to close)"
-                className="w-full px-4 py-3 rounded-lg bg-white shadow-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded-lg bg-[var(--foreground)] shadow-lg border border-[var(--neutral-200)] focus:ring-2 focus:ring-[var(--primary)] focus:outline-none"
                 autoFocus
               />
             </div>

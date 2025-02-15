@@ -150,10 +150,10 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header with Gradient */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-primary-dark p-8 mb-8 text-white">
+        <div className="relative overflow-hidden rounded-xl bg-[var(--gradient-primary)] p-8 mb-8 text-white">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -169,7 +169,7 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
               {mode === "personal" ? (
                 <Button
                   asChild
-                  className="bg-white text-[var(--primary)] hover:bg-white/90"
+                  className="bg-white/90 hover:bg-white text-[var(--primary)] border-0 shadow-md"
                 >
                   <Link href="/decks/create" className="gap-2">
                     <Plus className="h-4 w-4" />
@@ -183,21 +183,21 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
               )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white/10 rounded-lg p-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                 <div className="flex items-center gap-3 mb-2">
                   <Book className="h-5 w-5" />
                   <h3 className="font-medium">Total Decks</h3>
                 </div>
                 <p className="text-2xl font-bold">{decks.length}</p>
               </div>
-              <div className="bg-white/10 rounded-lg p-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                 <div className="flex items-center gap-3 mb-2">
                   <Star className="h-5 w-5" />
                   <h3 className="font-medium">Topics</h3>
                 </div>
                 <p className="text-2xl font-bold">{topics.length}</p>
               </div>
-              <div className="bg-white/10 rounded-lg p-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                 <div className="flex items-center gap-3 mb-2">
                   {mode === "community" ? (
                     <Users className="h-5 w-5" />
@@ -231,26 +231,26 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
         {/* Filters Section */}
         <div className="mb-8 space-y-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
               <Search className="h-4 w-4" />
               <span className="text-sm font-medium">
                 Search by title or description
               </span>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Search decks..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full pl-10 pr-4 py-2 rounded-lg bg-[var(--foreground)] border border-[var(--neutral-200)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
               <Book className="h-4 w-4" />
               <span className="text-sm font-medium">Filter by topic</span>
             </div>
@@ -276,10 +276,10 @@ export default function DecksContent({ mode = "personal" }: DecksContentProps) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
               <Users className="h-4 w-4" />
               <span className="text-sm font-medium">Filter by creator</span>
-              <span className="text-xs text-muted-foreground/75">
+              <span className="text-xs text-[var(--text-secondary)]/75">
                 {mode === "community"
                   ? "• See decks created by you or others in the community"
                   : "• See your decks or decks shared by others"}

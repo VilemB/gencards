@@ -7,7 +7,7 @@ function ErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   return (
-    <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+    <div className="max-w-md w-full bg-[var(--foreground)] rounded-lg shadow-lg p-6">
       <div className="flex items-center gap-3 mb-4 text-[var(--error)]">
         <AlertCircle className="h-6 w-6" />
         <h1 className="text-xl font-semibold">Authentication Error</h1>

@@ -389,7 +389,7 @@ export default function StudyClient({ deckId }: Props) {
                   </span>
                 </div>
                 {/* Add accuracy bar */}
-                <div className="w-full bg-[var(--neutral-200)] rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-[var(--foreground)]/20 rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-1000 ${
                       analytics.accuracy >= 80
@@ -437,9 +437,9 @@ export default function StudyClient({ deckId }: Props) {
                   </span>
                 </div>
                 {/* Add time distribution bar */}
-                <div className="w-full bg-[var(--neutral-200)] rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-[var(--foreground)]/20 rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-[var(--primary)] h-full rounded-full transition-all duration-1000"
+                    className="bg-[var(--foreground)] h-full rounded-full transition-all duration-1000"
                     style={{
                       width: "100%",
                     }}
@@ -559,9 +559,9 @@ export default function StudyClient({ deckId }: Props) {
                 <p className="text-white/80">Time Elapsed</p>
               </div>
             </div>
-            <div className="w-full bg-white/20 rounded-full h-2">
+            <div className="w-full bg-[var(--foreground)]/20 rounded-full h-2">
               <div
-                className="bg-white h-2 rounded-full transition-all duration-300"
+                className="bg-[var(--foreground)] h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>

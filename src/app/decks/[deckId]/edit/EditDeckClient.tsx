@@ -458,7 +458,7 @@ export default function EditDeckClient({ deckId }: Props) {
                   animate={{ rotateY: 0, opacity: 1 }}
                   exit={{ rotateY: isCardFlipped ? 0 : 180, opacity: 0 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="absolute inset-0 bg-white rounded-xl shadow-lg p-8 flex flex-col backface-hidden"
+                  className="absolute inset-0 bg-[var(--foreground)] rounded-xl shadow-lg p-8 flex flex-col backface-hidden"
                   style={{
                     transformStyle: "preserve-3d",
                   }}
@@ -486,7 +486,7 @@ export default function EditDeckClient({ deckId }: Props) {
                 variant="outline"
                 onClick={previousPreviewCard}
                 disabled={currentPreviewIndex === 0}
-                className="gap-2"
+                className="gap-2 bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/20 border-[var(--foreground)]/20"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Previous
@@ -502,7 +502,7 @@ export default function EditDeckClient({ deckId }: Props) {
                 disabled={
                   cards.length === 0 || currentPreviewIndex === cards.length - 1
                 }
-                className="gap-2"
+                className="gap-2 bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/20 border-[var(--foreground)]/20"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
