@@ -29,7 +29,7 @@ import {
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 interface Card {
   _id: string;
@@ -132,11 +132,11 @@ export default function EditDeckClient({ deckId }: Props) {
   const [generationCount, setGenerationCount] = useState(5);
   const [createNewDeck, setCreateNewDeck] = useState(false);
   const [generationTopic, setGenerationTopic] = useState("");
+  const [parentDeckId, setParentDeckId] = useState<string | null>(null);
+  const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
   const [responseType, setResponseType] = useState<"simple" | "complex">(
     "complex"
   );
-  const [parentDeckId, setParentDeckId] = useState<string | null>(null);
-  const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -311,13 +311,15 @@ export default function EditDeckClient({ deckId }: Props) {
     setError("");
     setShowGenerateModal(false);
 
-    try {
-      // First, show a toast indicating generation has started
-      toast.loading("Generating your flashcards...", {
-        duration: Infinity,
-        id: "generating-cards",
-      });
+    // Create a loading toast that persists
+    const loadingToast = toast.loading(
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>Generating your flashcards...</span>
+      </div>
+    );
 
+    try {
       const response = await fetch("/api/decks/generate", {
         method: "POST",
         headers: {
@@ -339,7 +341,7 @@ export default function EditDeckClient({ deckId }: Props) {
       const data = await response.json();
 
       // Dismiss the loading toast
-      toast.dismiss("generating-cards");
+      toast.dismiss(loadingToast);
 
       if (createNewDeck) {
         toast.success("New deck created successfully!");
@@ -404,8 +406,8 @@ export default function EditDeckClient({ deckId }: Props) {
       router.push(`/decks/${deckId}`);
     } catch (err) {
       console.error("Error generating flashcards:", err);
-      // Dismiss the loading toast if it's still showing
-      toast.dismiss("generating-cards");
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
       // Show error toast
       toast.error(
         err instanceof Error ? err.message : "Failed to generate flashcards"
