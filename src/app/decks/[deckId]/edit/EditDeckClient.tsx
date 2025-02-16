@@ -131,6 +131,9 @@ export default function EditDeckClient({ deckId }: Props) {
   const [generationCount, setGenerationCount] = useState(5);
   const [createNewDeck, setCreateNewDeck] = useState(false);
   const [generationTopic, setGenerationTopic] = useState("");
+  const [responseType, setResponseType] = useState<"simple" | "complex">(
+    "complex"
+  );
   const [parentDeckId, setParentDeckId] = useState<string | null>(null);
   const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
 
@@ -317,6 +320,7 @@ export default function EditDeckClient({ deckId }: Props) {
           topic: `${topic} - ${generationTopic}`,
           count: generationCount,
           createNewDeck,
+          responseType,
         }),
       });
 
@@ -856,6 +860,8 @@ export default function EditDeckClient({ deckId }: Props) {
           onClose={() => setShowGenerateModal(false)}
           title="Generate Cards with AI"
           description="Let AI help you create high-quality flashcards for your deck."
+          responseType={responseType}
+          onResponseTypeChange={setResponseType}
         >
           <div className="space-y-4 py-4">
             <div>

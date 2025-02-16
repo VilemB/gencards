@@ -8,6 +8,8 @@ interface GenerateCardsModalProps {
   title: string;
   description: React.ReactNode;
   children: React.ReactNode;
+  responseType: "simple" | "complex";
+  onResponseTypeChange: (type: "simple" | "complex") => void;
 }
 
 export function GenerateCardsModal({
@@ -16,6 +18,8 @@ export function GenerateCardsModal({
   title,
   description,
   children,
+  responseType,
+  onResponseTypeChange,
 }: GenerateCardsModalProps) {
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -62,6 +66,32 @@ export function GenerateCardsModal({
                   >
                     <X className="h-5 w-5" />
                   </button>
+                </div>
+
+                <div className="flex justify-center mb-6">
+                  <div className="flex gap-2 p-1">
+                    <button
+                      onClick={() => onResponseTypeChange("simple")}
+                      className={`px-6 py-2 text-sm font-medium transition-all duration-200 border-2 ${
+                        responseType === "simple"
+                          ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/5"
+                          : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--neutral-100)]"
+                      }`}
+                    >
+                      Simple
+                    </button>
+                    <div className="w-px bg-[var(--neutral-200)]" />
+                    <button
+                      onClick={() => onResponseTypeChange("complex")}
+                      className={`px-6 py-2 text-sm font-medium transition-all duration-200 border-2 ${
+                        responseType === "complex"
+                          ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/5"
+                          : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--neutral-100)]"
+                      }`}
+                    >
+                      Detailed
+                    </button>
+                  </div>
                 </div>
 
                 {children}

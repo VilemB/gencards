@@ -29,7 +29,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const { topic, count = 5, createNewDeck = false } = await request.json();
+    const {
+      topic,
+      count = 5,
+      createNewDeck = false,
+      responseType = "complex",
+    } = await request.json();
 
     if (!topic) {
       return NextResponse.json(
@@ -38,14 +43,27 @@ export async function POST(request: Request) {
       );
     }
 
-    const prompt = `Create ${count} high-quality flashcards about "${topic}". 
+    let promptInstructions = "";
+    if (responseType === "simple") {
+      promptInstructions = `Create ${count} concise flashcards about "${topic}".
+Each flashcard should follow these guidelines:
+- Front: A single word or very short phrase
+- Back: A direct, simple answer without additional explanation
+- Keep both question and answer as brief as possible
+- No HTML formatting needed
+- Focus on core concepts only`;
+    } else {
+      promptInstructions = `Create ${count} detailed flashcards about "${topic}".
 Each flashcard should follow these guidelines:
 - Front: A clear, concise question or key term
-- Back: A comprehensive but focused explanation or definition
+- Back: A comprehensive explanation with examples and context
 - Content should be accurate and educational
 - Use appropriate HTML formatting with <p>, <ul>, <li> tags for structure
 - Ensure progressive difficulty from basic to advanced concepts
-- Include real-world examples where relevant
+- Include real-world examples where relevant`;
+    }
+
+    const prompt = `${promptInstructions}
 
 Return the response in this exact JSON format:
 {
@@ -63,7 +81,7 @@ Return the response in this exact JSON format:
         {
           role: "system",
           content:
-            "You are an expert educator creating comprehensive flashcards. Your responses should be accurate, well-structured, and in valid JSON format.",
+            "You are an expert educator creating flashcards. Your responses should be accurate, well-structured, and in valid JSON format.",
         },
         { role: "user", content: prompt },
       ],
