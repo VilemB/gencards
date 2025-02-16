@@ -30,19 +30,19 @@
   --neutral-900: #18181b;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #2563eb, #4338ca);
+  --gradient-primary: linear-gradient(135deg, #1e1e2f, #2d1b4e);
   --gradient-primary-dark: linear-gradient(
     135deg,
-    rgba(37, 99, 235, 0.9),
-    rgba(67, 56, 202, 0.9)
+    rgba(30, 30, 47, 0.9),
+    rgba(45, 27, 78, 0.9)
   );
-  --gradient-secondary: linear-gradient(135deg, #3b82f6, #2563eb);
-  --gradient-accent: linear-gradient(135deg, #f97316, #ea580c);
-  --gradient-success: linear-gradient(135deg, #10b981, #059669);
+  --gradient-secondary: linear-gradient(135deg, #2d1b4e, #4a1d6a);
+  --gradient-accent: linear-gradient(135deg, #6b1c70, #8e1c70);
+  --gradient-success: linear-gradient(135deg, #1e4e3d, #1b4e2d);
   --gradient-hover: linear-gradient(
     135deg,
-    rgba(37, 99, 235, 0.8),
-    rgba(67, 56, 202, 0.8)
+    rgba(30, 30, 47, 0.8),
+    rgba(45, 27, 78, 0.8)
   );
 }
 
@@ -74,19 +74,19 @@
   --neutral-900: #f5f5f5;
 
   /* Dark theme gradients */
-  --gradient-primary: linear-gradient(135deg, #1d4ed8, #3730a3);
+  --gradient-primary: linear-gradient(135deg, #0f0f1a, #1a0f2e);
   --gradient-primary-dark: linear-gradient(
     135deg,
-    rgba(29, 78, 216, 0.9),
-    rgba(55, 48, 163, 0.9)
+    rgba(15, 15, 26, 0.9),
+    rgba(26, 15, 46, 0.9)
   );
-  --gradient-secondary: linear-gradient(135deg, #2563eb, #1d4ed8);
-  --gradient-accent: linear-gradient(135deg, #ea580c, #c2410c);
-  --gradient-success: linear-gradient(135deg, #059669, #047857);
+  --gradient-secondary: linear-gradient(135deg, #1a0f2e, #2a0f3e);
+  --gradient-accent: linear-gradient(135deg, #3d0f3e, #4e0f3e);
+  --gradient-success: linear-gradient(135deg, #0f2e1a, #0f2e1a);
   --gradient-hover: linear-gradient(
     135deg,
-    rgba(29, 78, 216, 0.8),
-    rgba(55, 48, 163, 0.8)
+    rgba(15, 15, 26, 0.8),
+    rgba(26, 15, 46, 0.8)
   );
 }
 
@@ -133,14 +133,6 @@
     @apply btn text-[var(--text-secondary)] hover:bg-[var(--neutral-100)] hover:text-[var(--text-primary)] focus:ring-[var(--neutral-200)] border-0 shadow-sm hover:shadow-md transition-all duration-200;
   }
 
-  .gradient-primary {
-    @apply bg-[var(--gradient-primary)];
-  }
-
-  .gradient-blue {
-    @apply bg-[var(--gradient-secondary)];
-  }
-
   .heading-1 {
     @apply text-4xl font-bold tracking-tight text-[var(--text-primary)] sm:text-5xl;
   }
@@ -160,11 +152,7 @@
   /* Header Styles */
   .header-gradient {
     @apply relative overflow-hidden rounded-xl p-8 mb-8 text-white;
-    background: linear-gradient(
-      135deg,
-      rgba(29, 78, 216, 0.9),
-      rgba(55, 48, 163, 0.95)
-    );
+    background: var(--gradient-primary);
   }
 
   .header-pattern {
