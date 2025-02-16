@@ -222,20 +222,22 @@ export default function SettingsPage() {
                     htmlFor="email"
                     className="block text-sm font-medium text-[var(--text-primary)] mb-2"
                   >
-                    Email Address
+                    Email Address{" "}
+                    <span className="text-xs text-gray-500">
+                      (Cannot be changed)
+                    </span>
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--text-secondary)]" />
                     <input
                       type="email"
                       id="email"
+                      disabled
                       value={form.email}
                       onChange={(e) =>
                         setForm({ ...form, email: e.target.value })
                       }
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
-                      required
-                      disabled={isSaving}
+                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all "
                     />
                   </div>
                 </div>
@@ -416,6 +418,18 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSaving} className="w-full">
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </div>
 
           {/* Account Actions */}
           <div className="bg-[var(--foreground)] rounded-xl border border-[var(--neutral-200)] overflow-hidden">
@@ -457,19 +471,6 @@ export default function SettingsPage() {
               <p className="text-sm">{error}</p>
             </div>
           )}
-
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isSaving} className="min-w-[200px]">
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </Button>
-          </div>
         </form>
 
         {/* Delete Account Modal */}
