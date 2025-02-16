@@ -30,19 +30,19 @@
   --neutral-900: #18181b;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #1e1e2f, #2d1b4e);
+  --gradient-primary: linear-gradient(135deg, #2b2d42, #6246ea);
   --gradient-primary-dark: linear-gradient(
     135deg,
-    rgba(30, 30, 47, 0.9),
-    rgba(45, 27, 78, 0.9)
+    rgba(43, 45, 66, 0.9),
+    rgba(98, 70, 234, 0.9)
   );
-  --gradient-secondary: linear-gradient(135deg, #2d1b4e, #4a1d6a);
-  --gradient-accent: linear-gradient(135deg, #6b1c70, #8e1c70);
-  --gradient-success: linear-gradient(135deg, #1e4e3d, #1b4e2d);
+  --gradient-secondary: linear-gradient(135deg, #6246ea, #9d4edd);
+  --gradient-accent: linear-gradient(135deg, #9d4edd, #c77dff);
+  --gradient-success: linear-gradient(135deg, #2cb67d, #34d399);
   --gradient-hover: linear-gradient(
     135deg,
-    rgba(30, 30, 47, 0.8),
-    rgba(45, 27, 78, 0.8)
+    rgba(43, 45, 66, 0.8),
+    rgba(98, 70, 234, 0.8)
   );
 }
 
@@ -75,11 +75,6 @@
 
   /* Dark theme gradients */
   --gradient-primary: linear-gradient(135deg, #0f0f1a, #1a0f2e);
-  --gradient-primary-dark: linear-gradient(
-    135deg,
-    rgba(15, 15, 26, 0.9),
-    rgba(26, 15, 46, 0.9)
-  );
   --gradient-secondary: linear-gradient(135deg, #1a0f2e, #2a0f3e);
   --gradient-accent: linear-gradient(135deg, #3d0f3e, #4e0f3e);
   --gradient-success: linear-gradient(135deg, #0f2e1a, #0f2e1a);
