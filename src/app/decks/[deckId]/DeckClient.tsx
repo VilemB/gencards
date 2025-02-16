@@ -15,6 +15,7 @@ import {
   Eye,
   Plus,
   ChevronLeft,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/Modal";
@@ -26,6 +27,8 @@ import { CardPreviewModal } from "@/components/ui/CardPreviewModal";
 import { useHotkeys } from "react-hotkeys-hook";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
+import { toast } from "sonner";
 
 interface Props {
   deckId: string;
@@ -106,6 +109,13 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationCount, setGenerationCount] = useState(5);
+  const [generationTopic, setGenerationTopic] = useState("");
+  const [responseType, setResponseType] = useState<"simple" | "complex">(
+    "complex"
+  );
 
   useEffect(() => {
     async function loadDeck() {
@@ -182,6 +192,90 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
     if (selectedCard !== null && selectedCard > 0) {
       setSelectedCard(selectedCard - 1);
       setIsCardFlipped(false);
+    }
+  };
+
+  const handleAIAssist = async () => {
+    if (!deck?.topic) {
+      toast.error("No topic found for this deck");
+      return;
+    }
+
+    if (!generationTopic) {
+      toast.error("Please enter what you want to learn about");
+      return;
+    }
+
+    setIsGenerating(true);
+    setShowGenerateModal(false);
+
+    const loadingToast = toast.loading(
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>Generating your flashcards...</span>
+      </div>
+    );
+
+    try {
+      const response = await fetch("/api/decks/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: `${deck.topic} - ${generationTopic}`,
+          count: generationCount,
+          createNewDeck: false,
+          responseType,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to generate flashcards");
+      }
+
+      const data = await response.json();
+      toast.dismiss(loadingToast);
+
+      // Add the new cards to the deck
+      const updatedCards = [...(deck?.cards || []), ...data.cards];
+
+      // Save the changes
+      const saveResponse = await fetch(`/api/decks/${deckId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...deck,
+          cards: updatedCards,
+          cardCount: updatedCards.length,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error("Failed to save changes");
+      }
+
+      // Show success message
+      toast.success(`Generated ${data.cards.length} new flashcards!`);
+
+      // Reload the deck
+      const deckResponse = await fetch(`/api/decks/${deckId}`);
+      if (!deckResponse.ok) {
+        throw new Error("Failed to reload deck");
+      }
+      const updatedDeck = await deckResponse.json();
+      setDeck(updatedDeck);
+    } catch (err) {
+      console.error("Error generating flashcards:", err);
+      toast.dismiss(loadingToast);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate flashcards"
+      );
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -310,14 +404,19 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
               </div>
               <div className="flex flex-wrap gap-3 mt-6 md:mt-0 animate-slide-up-delayed">
                 {isOwner && (
-                  <>
+                  <div className="flex flex-row gap-2 w-full">
                     <Button
                       variant="outline"
-                      onClick={() => router.push(`/decks/${deckId}/edit`)}
-                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                      onClick={() => setShowGenerateModal(true)}
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-1/2"
+                      disabled={isGenerating}
                     >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      {isGenerating ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      AI Generate
                     </Button>
                     <Button
                       variant="outline"
@@ -326,38 +425,48 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                           `/decks/create?parentDeckId=${deckId}&topic=${deck?.topic}`
                         )
                       }
-                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-1/2"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Subdeck
                     </Button>
                     <Button
                       variant="outline"
+                      onClick={() => router.push(`/decks/${deckId}/edit`)}
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-1/2"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
                       onClick={() => setShowDeleteModal(true)}
-                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-1/2"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
-                  </>
+                  </div>
                 )}
-                <Button
-                  variant="outline"
-                  onClick={handleShare}
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                >
-                  <Share className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-                {deck.cards.length > 0 && (
+                <div className="flex flex-row gap-2 w-full">
                   <Button
-                    onClick={() => router.push(`/decks/${deckId}/study`)}
-                    className="bg-white hover:bg-white/90 text-[var(--primary)] font-medium shadow-md animate-fade-in-up"
+                    variant="outline"
+                    onClick={handleShare}
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-1/2"
                   >
-                    <Play className="h-4 w-4 mr-2" />
-                    Study Now
+                    <Share className="h-4 w-4 mr-2" />
+                    Share
                   </Button>
-                )}
+                  {deck.cards.length > 0 && (
+                    <Button
+                      onClick={() => router.push(`/decks/${deckId}/study`)}
+                      className="bg-white hover:bg-white/90 text-[var(--primary)] font-medium shadow-md animate-fade-in-up w-1/2"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Study Now
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -508,6 +617,81 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
             onClose={() => setShowShareToast(false)}
           />
         )}
+
+        {/* Generate Cards Modal */}
+        <GenerateCardsModal
+          isOpen={showGenerateModal}
+          onClose={() => setShowGenerateModal(false)}
+          title="Generate Cards with AI"
+          description="Let AI help you create high-quality flashcards for your deck."
+          responseType={responseType}
+          onResponseTypeChange={setResponseType}
+        >
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                What do you want to learn about?
+              </label>
+              <input
+                type="text"
+                value={generationTopic}
+                onChange={(e) => setGenerationTopic(e.target.value)}
+                placeholder="e.g., animals, verbs, food, numbers..."
+                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
+              />
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Specify what kind of {deck?.topic} content you want to learn
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                Number of Cards
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={generationCount}
+                onChange={(e) =>
+                  setGenerationCount(
+                    Math.min(20, Math.max(1, parseInt(e.target.value) || 1))
+                  )
+                }
+                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
+              />
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Choose between 1-20 cards to generate
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowGenerateModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAIAssist}
+              disabled={isGenerating || !generationTopic}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Generate Cards
+                </>
+              )}
+            </Button>
+          </div>
+        </GenerateCardsModal>
       </div>
     </div>
   );
