@@ -429,37 +429,24 @@ export default function SettingsPage() {
           </div>
 
           {/* Account Actions */}
-          <div className="bg-[var(--foreground)] rounded-xl border border-[var(--neutral-200)] overflow-hidden">
-            <div className="px-6 py-5 border-b border-[var(--neutral-200)] bg-[var(--neutral-50)]/50">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 dark:bg-red-500/10 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                </div>
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  Account Actions
-                </h2>
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowSignOutModal(true)}
-                  className="flex-1"
-                >
-                  Sign Out
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setShowDeleteModal(true)}
-                  className="flex-1"
-                >
-                  Delete Account
-                </Button>
-              </div>
-            </div>
+          <hr className="border-t border-[var(--neutral-200)] my-8" />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSignOutModal(true)}
+              className="flex-1"
+            >
+              Sign Out
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setShowDeleteModal(true)}
+              className="flex-1 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+            >
+              Delete Account
+            </Button>
           </div>
 
           {error && (
