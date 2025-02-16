@@ -271,7 +271,6 @@ export default function SettingsPage() {
                         ...form,
                         preferences: { ...form.preferences, theme: "light" },
                       });
-                      setTheme("light");
                     }}
                     className={cn(
                       "flex items-center gap-3 p-4 rounded-lg border transition-all",
@@ -290,7 +289,6 @@ export default function SettingsPage() {
                         ...form,
                         preferences: { ...form.preferences, theme: "dark" },
                       });
-                      setTheme("dark");
                     }}
                     className={cn(
                       "flex items-center gap-3 p-4 rounded-lg border transition-all",
@@ -309,7 +307,6 @@ export default function SettingsPage() {
                         ...form,
                         preferences: { ...form.preferences, theme: "system" },
                       });
-                      setTheme("system");
                     }}
                     className={cn(
                       "flex items-center gap-3 p-4 rounded-lg border transition-all",
