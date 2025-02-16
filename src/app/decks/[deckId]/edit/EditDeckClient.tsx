@@ -29,6 +29,7 @@ import {
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
+import { toast } from "react-hot-toast";
 
 interface Card {
   _id: string;
@@ -311,6 +312,12 @@ export default function EditDeckClient({ deckId }: Props) {
     setShowGenerateModal(false);
 
     try {
+      // First, show a toast indicating generation has started
+      toast.loading("Generating your flashcards...", {
+        duration: Infinity,
+        id: "generating-cards",
+      });
+
       const response = await fetch("/api/decks/generate", {
         method: "POST",
         headers: {
@@ -331,7 +338,11 @@ export default function EditDeckClient({ deckId }: Props) {
 
       const data = await response.json();
 
+      // Dismiss the loading toast
+      toast.dismiss("generating-cards");
+
       if (createNewDeck) {
+        toast.success("New deck created successfully!");
         // Redirect to the new deck
         router.push(`/decks/${data.deckId}`);
         return;
@@ -354,27 +365,57 @@ export default function EditDeckClient({ deckId }: Props) {
         }));
 
       if (newCards.length === 0) {
-        setError(
+        toast.error(
           "All generated cards are already in your deck. Try a different topic or count."
         );
         return;
       }
 
-      if (newCards.length < data.cards.length) {
-        setShowSuccessToast(true);
-        setTimeout(() => {
-          setShowSuccessToast(false);
-        }, 3000);
+      // Show success message with the number of cards added
+      toast.success(`Generated ${newCards.length} new flashcards!`);
+
+      // Add the new cards to the deck
+      const updatedCards = [...cards, ...newCards];
+      setCards(updatedCards);
+
+      // Automatically save the changes
+      setIsSaving(true);
+      const saveResponse = await fetch(`/api/decks/${deckId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          topic,
+          isPublic,
+          parentDeckId,
+          cards: updatedCards.map(({ front, back }) => ({ front, back })),
+          cardCount: updatedCards.length,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error("Failed to save changes");
       }
 
-      setCards([...cards, ...newCards]);
+      // Navigate back to the deck view
+      router.push(`/decks/${deckId}`);
     } catch (err) {
       console.error("Error generating flashcards:", err);
+      // Dismiss the loading toast if it's still showing
+      toast.dismiss("generating-cards");
+      // Show error toast
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate flashcards"
+      );
       setError(
         err instanceof Error ? err.message : "Failed to generate flashcards"
       );
     } finally {
       setIsGenerating(false);
+      setIsSaving(false);
     }
   };
 
