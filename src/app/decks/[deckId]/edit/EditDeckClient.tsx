@@ -330,6 +330,7 @@ export default function EditDeckClient({ deckId }: Props) {
           count: generationCount,
           createNewDeck,
           responseType,
+          deckId: createNewDeck ? null : deckId,
         }),
       });
 

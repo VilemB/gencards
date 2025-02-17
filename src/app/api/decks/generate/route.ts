@@ -15,6 +15,40 @@ interface Flashcard {
   back: string;
 }
 
+async function getDeckChain(deckId: string | null): Promise<string[]> {
+  if (!deckId) return [];
+
+  const deck = await Deck.findById(deckId).populate({
+    path: "parentDeckId",
+    select: "title parentDeckId",
+    populate: {
+      path: "parentDeckId",
+      select: "title parentDeckId",
+    },
+  });
+
+  if (!deck) return [];
+
+  const chain = [];
+  let currentDeck = deck;
+  while (currentDeck) {
+    chain.unshift(currentDeck.title);
+    currentDeck = currentDeck.parentDeckId;
+  }
+  return chain;
+}
+
+async function getExistingCards(
+  deckId: string | null
+): Promise<Array<{ front: string; back: string }>> {
+  if (!deckId) return [];
+
+  const deck = await Deck.findById(deckId);
+  if (!deck) return [];
+
+  return deck.cards;
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -34,6 +68,7 @@ export async function POST(request: Request) {
       count = 5,
       createNewDeck = false,
       responseType = "complex",
+      deckId = null,
     } = await request.json();
 
     if (!topic) {
@@ -43,10 +78,27 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get deck chain for context
+    const deckChain = await getDeckChain(deckId);
+    const existingCards = await getExistingCards(deckId);
+
     // Split the topic to extract deck context and specific topic
     const [deckContext, specificTopic] = topic
       .split(" - ")
       .map((t: string) => t.trim());
+
+    // Validate the context matches the deck's topic if adding to existing deck
+    if (deckId) {
+      const deck = await Deck.findById(deckId);
+      if (deck && deck.topic.toLowerCase() !== deckContext.toLowerCase()) {
+        return NextResponse.json(
+          {
+            error: `Cards must be in the same context as the deck (${deck.topic})`,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     let promptInstructions = "";
     if (responseType === "simple") {
@@ -57,7 +109,9 @@ Each flashcard should follow these guidelines:
 - Keep both question and answer as brief as possible
 - No HTML formatting needed
 - Focus on core concepts only
-- IMPORTANT: DO NOT include content from other languages or contexts besides ${deckContext}`;
+- IMPORTANT: You MUST ONLY create content related to ${deckContext}. DO NOT include content from any other language or context
+- IMPORTANT: DO NOT create cards that are too similar to the existing cards listed below
+- IMPORTANT: If this is a language deck, all content MUST be in ${deckContext} language or about ${deckContext} language`;
     } else {
       promptInstructions = `Create ${count} detailed flashcards about "${specificTopic}" STRICTLY in ${deckContext} language/context only.
 Each flashcard should follow these guidelines:
@@ -67,10 +121,30 @@ Each flashcard should follow these guidelines:
 - Use appropriate HTML formatting with <p>, <ul>, <li> tags for structure
 - Ensure progressive difficulty from basic to advanced concepts
 - Include real-world examples where relevant
-- IMPORTANT: DO NOT include content from other languages or contexts besides ${deckContext}`;
+- IMPORTANT: You MUST ONLY create content related to ${deckContext}. DO NOT include content from any other language or context
+- IMPORTANT: DO NOT create cards that are too similar to the existing cards listed below
+- IMPORTANT: If this is a language deck, all content MUST be in ${deckContext} language or about ${deckContext} language`;
     }
 
-    const prompt = `${promptInstructions}
+    // Add deck chain context if available
+    const deckChainContext =
+      deckChain.length > 0
+        ? `\nThis flashcard set is part of the following deck hierarchy (from root to current): ${deckChain.join(
+            " → "
+          )}`
+        : "";
+
+    // Add existing cards to avoid duplicates
+    const existingCardsContext =
+      existingCards.length > 0
+        ? `\n\nExisting cards in this deck (DO NOT create similar ones):\n${existingCards
+            .map((card) => `- Front: "${card.front}"\n  Back: "${card.back}"`)
+            .join("\n")}`
+        : "";
+
+    const prompt = `${promptInstructions}${deckChainContext}${existingCardsContext}
+
+IMPORTANT: Your task is to create flashcards ONLY for ${deckContext}. If you're asked to generate content for any other context, you must refuse.
 
 Return the response in this exact JSON format:
 {
@@ -87,15 +161,17 @@ Return the response in this exact JSON format:
       messages: [
         {
           role: "system",
-          content: `You are an expert educator specializing in ${deckContext}. Create educational flashcards about ${specificTopic}.
+          content: `You are an expert educator specializing in ${deckContext}. Your task is to create educational flashcards about ${specificTopic}, but ONLY in the context of ${deckContext}.
+
+IMPORTANT: You must NEVER generate content for any other context besides ${deckContext}. If the request seems to mix contexts, focus ONLY on ${deckContext}.
 
 Adapt your response based on the subject matter:
-- For Languages: Include native script, pronunciation, and cultural context
-- For Sciences: Include precise definitions, formulas, and real-world applications
-- For History/Literature: Include dates, key figures, and contextual significance
-- For Mathematics: Include formulas, step-by-step solutions, and practical examples
-- For Arts: Include terminology, techniques, and visual descriptions
-- For Other Subjects: Focus on core concepts and practical applications
+- For Languages: Include native script, pronunciation, and cultural context ONLY for ${deckContext} language
+- For Sciences: Include precise definitions, formulas, and real-world applications in the field of ${deckContext}
+- For History/Literature: Include dates, key figures, and contextual significance specific to ${deckContext}
+- For Mathematics: Include formulas, step-by-step solutions, and practical examples in ${deckContext}
+- For Arts: Include terminology, techniques, and visual descriptions related to ${deckContext}
+- For Other Subjects: Focus on core concepts and practical applications in ${deckContext}
 
 General guidelines:
 - Ensure accuracy and educational value
@@ -103,6 +179,9 @@ General guidelines:
 - Include relevant examples and applications
 - Use clear, concise language
 - Maintain proper formatting with HTML tags when needed
+- Avoid creating cards similar to existing ones
+- Consider the full deck hierarchy context when creating new cards
+- NEVER mix content from different contexts or languages
 
 Your responses must be well-structured and in valid JSON format.`,
         },

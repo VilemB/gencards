@@ -341,6 +341,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
           count,
           createNewDeck,
           responseType,
+          deckId: createNewDeck ? null : deckId,
         }),
       });
 
