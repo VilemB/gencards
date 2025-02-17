@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
 import { Eye, Loader2, Plus, Sparkles } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { AIGenerateModal } from "@/components/AIGenerateModal";
+import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
 
 interface Card {
   front: string;
@@ -31,6 +31,9 @@ export default function CreateCardsClient({
   const [previewMode, setPreviewMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
+  const [responseType, setResponseType] = useState<"simple" | "complex">(
+    "complex"
+  );
 
   const handleAddCard = useCallback(() => {
     setCards([...cards, { front: "", back: "" }]);
@@ -282,9 +285,15 @@ export default function CreateCardsClient({
           </div>
         </form>
 
-        <AIGenerateModal
+        <GenerateCardsModal
           isOpen={showAIModal}
           onClose={() => setShowAIModal(false)}
+          title="Generate Cards with AI"
+          description="Let AI help you create high-quality flashcards for your deck."
+          responseType={responseType}
+          onResponseTypeChange={(newResponseType) =>
+            setResponseType(newResponseType)
+          }
           onGenerate={handleGenerateCards}
           isLoading={isGenerating}
           deckTitle={deckTitle}

@@ -905,6 +905,14 @@ export default function EditDeckClient({ deckId }: Props) {
           description="Let AI help you create high-quality flashcards for your deck."
           responseType={responseType}
           onResponseTypeChange={setResponseType}
+          onGenerate={async (topic, count, createNewDeck) => {
+            setGenerationTopic(topic);
+            setGenerationCount(count);
+            setCreateNewDeck(createNewDeck);
+            await handleAIAssist();
+          }}
+          isLoading={isGenerating}
+          deckTitle={topic}
         >
           <div className="space-y-4 py-4">
             <div>
