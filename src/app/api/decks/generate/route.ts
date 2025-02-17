@@ -43,24 +43,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // Split the topic to extract deck context and specific topic
+    const [deckContext, specificTopic] = topic
+      .split(" - ")
+      .map((t: string) => t.trim());
+
     let promptInstructions = "";
     if (responseType === "simple") {
-      promptInstructions = `Create ${count} concise flashcards about "${topic}".
+      promptInstructions = `Create ${count} concise flashcards about "${specificTopic}" in the context of ${deckContext}.
 Each flashcard should follow these guidelines:
-- Front: A single word or very short phrase
+- Front: A single word or very short phrase specifically about ${specificTopic}
 - Back: A direct, simple answer without additional explanation
 - Keep both question and answer as brief as possible
 - No HTML formatting needed
-- Focus on core concepts only`;
+- Focus on core concepts only
+- Ensure all content is relevant to ${deckContext}`;
     } else {
-      promptInstructions = `Create ${count} detailed flashcards about "${topic}".
+      promptInstructions = `Create ${count} detailed flashcards about "${specificTopic}" in the context of ${deckContext}.
 Each flashcard should follow these guidelines:
-- Front: A clear, concise question or key term
+- Front: A clear, concise question or key term specifically about ${specificTopic}
 - Back: A comprehensive explanation with examples and context
 - Content should be accurate and educational
 - Use appropriate HTML formatting with <p>, <ul>, <li> tags for structure
 - Ensure progressive difficulty from basic to advanced concepts
-- Include real-world examples where relevant`;
+- Include real-world examples where relevant
+- Ensure all content is specifically tailored for ${deckContext}`;
     }
 
     const prompt = `${promptInstructions}
@@ -80,8 +87,7 @@ Return the response in this exact JSON format:
       messages: [
         {
           role: "system",
-          content:
-            "You are an expert educator creating flashcards. Your responses should be accurate, well-structured, and in valid JSON format.",
+          content: `You are an expert educator specializing in ${deckContext}. Create flashcards that are specifically focused on ${specificTopic} within the context of ${deckContext}. Your responses should be accurate, well-structured, and in valid JSON format.`,
         },
         { role: "user", content: prompt },
       ],
