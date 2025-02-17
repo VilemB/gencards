@@ -7,7 +7,7 @@ import { Card } from "@/types/deck";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { deckId: string; cardId: string } }
+  { params }: { params: Promise<{ deckId: string; cardId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);

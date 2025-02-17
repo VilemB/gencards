@@ -132,15 +132,26 @@ const DroppableSubdeck = ({
   const { setNodeRef } = useDroppable({
     id: `subdeck-${subdeck._id}`,
   });
+  const router = useRouter();
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "relative p-6 rounded-xl bg-[var(--neutral-50)] border-2 border-transparent transition-all",
+        "relative p-6 rounded-xl bg-[var(--neutral-50)] border-2 border-transparent transition-all cursor-pointer",
         isDragging &&
-          "border-dashed border-[var(--primary)] bg-[var(--primary-50)]"
+          "border-dashed border-[var(--primary)] bg-[var(--primary-50)]",
+        !isDragging && "hover:bg-[var(--neutral-100)]"
       )}
+      onClick={() => router.push(`/decks/${subdeck._id}`)}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(`/decks/${subdeck._id}`);
+        }
+      }}
     >
       <div className="flex items-center gap-3 mb-2">
         <FolderOpen className="h-5 w-5 text-[var(--primary)]" />
