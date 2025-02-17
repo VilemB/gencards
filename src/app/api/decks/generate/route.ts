@@ -50,24 +50,24 @@ export async function POST(request: Request) {
 
     let promptInstructions = "";
     if (responseType === "simple") {
-      promptInstructions = `Create ${count} concise flashcards about "${specificTopic}" in the context of ${deckContext}.
+      promptInstructions = `Create ${count} concise flashcards about "${specificTopic}" STRICTLY in ${deckContext} language/context only.
 Each flashcard should follow these guidelines:
-- Front: A single word or very short phrase specifically about ${specificTopic}
+- Front: A single word or very short phrase about ${specificTopic} in ${deckContext} ONLY
 - Back: A direct, simple answer without additional explanation
 - Keep both question and answer as brief as possible
 - No HTML formatting needed
 - Focus on core concepts only
-- Ensure all content is relevant to ${deckContext}`;
+- IMPORTANT: DO NOT include content from other languages or contexts besides ${deckContext}`;
     } else {
-      promptInstructions = `Create ${count} detailed flashcards about "${specificTopic}" in the context of ${deckContext}.
+      promptInstructions = `Create ${count} detailed flashcards about "${specificTopic}" STRICTLY in ${deckContext} language/context only.
 Each flashcard should follow these guidelines:
-- Front: A clear, concise question or key term specifically about ${specificTopic}
+- Front: A clear, concise question or key term about ${specificTopic} in ${deckContext} ONLY
 - Back: A comprehensive explanation with examples and context
 - Content should be accurate and educational
 - Use appropriate HTML formatting with <p>, <ul>, <li> tags for structure
 - Ensure progressive difficulty from basic to advanced concepts
 - Include real-world examples where relevant
-- Ensure all content is specifically tailored for ${deckContext}`;
+- IMPORTANT: DO NOT include content from other languages or contexts besides ${deckContext}`;
     }
 
     const prompt = `${promptInstructions}
@@ -87,7 +87,24 @@ Return the response in this exact JSON format:
       messages: [
         {
           role: "system",
-          content: `You are an expert educator specializing in ${deckContext}. Create flashcards that are specifically focused on ${specificTopic} within the context of ${deckContext}. Your responses should be accurate, well-structured, and in valid JSON format.`,
+          content: `You are an expert educator specializing in ${deckContext}. Create educational flashcards about ${specificTopic}.
+
+Adapt your response based on the subject matter:
+- For Languages: Include native script, pronunciation, and cultural context
+- For Sciences: Include precise definitions, formulas, and real-world applications
+- For History/Literature: Include dates, key figures, and contextual significance
+- For Mathematics: Include formulas, step-by-step solutions, and practical examples
+- For Arts: Include terminology, techniques, and visual descriptions
+- For Other Subjects: Focus on core concepts and practical applications
+
+General guidelines:
+- Ensure accuracy and educational value
+- Progress from fundamental to advanced concepts
+- Include relevant examples and applications
+- Use clear, concise language
+- Maintain proper formatting with HTML tags when needed
+
+Your responses must be well-structured and in valid JSON format.`,
         },
         { role: "user", content: prompt },
       ],
@@ -101,7 +118,12 @@ Return the response in this exact JSON format:
 
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(responseText);
+      // Clean the response text by removing markdown code block syntax
+      const cleanedResponse = responseText
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+      parsedResponse = JSON.parse(cleanedResponse);
     } catch (err) {
       console.error("Failed to parse AI response:", responseText, err);
       throw new Error("Invalid JSON response from AI model");

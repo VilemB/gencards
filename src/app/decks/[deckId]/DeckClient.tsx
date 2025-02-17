@@ -791,35 +791,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 }}
               />
             </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4"
-            >
-              {deck.cards
-                .filter((card) =>
-                  searchQuery
-                    ? card.front
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                      card.back
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                    : true
-                )
-                .map((card, index) => (
-                  <CardPreview
-                    key={card._id}
-                    question={card.front}
-                    onClick={() => handleCardClick(index)}
-                    index={index}
-                    card={card}
-                    isDragging={isDragging}
-                  />
-                ))}
-            </motion.div>
-          )}
+          ) : null}
 
           {/* Enhanced Card Preview Modal */}
           {selectedCard !== null && deck?.cards[selectedCard] && (
