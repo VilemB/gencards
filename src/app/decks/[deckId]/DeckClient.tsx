@@ -647,12 +647,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 deckId={deck._id}
                 deckTitle={deck.title}
                 currentPage=""
-                path={deck.path}
-                parentDeckId={
-                  typeof deck.parentDeckId === "string"
-                    ? deck.parentDeckId
-                    : deck.parentDeckId?._id
-                }
+                parentDeckId={deck.parentDeckId}
               />
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="flex-1">

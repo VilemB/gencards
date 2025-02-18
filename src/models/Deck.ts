@@ -97,14 +97,30 @@ deckSchema.index({ parentDeckId: 1 });
 // Pre-save middleware to update path
 deckSchema.pre("save", async function (this: IDeck, next) {
   // Always ensure path is set, not just on parentDeckId modification
-  if (!this.path || this.isModified("parentDeckId")) {
+  if (
+    !this.path ||
+    this.isModified("parentDeckId") ||
+    this.isModified("title")
+  ) {
     if (!this.parentDeckId) {
-      this.path = `/${this._id}`;
+      this.path = `${this._id}:${encodeURIComponent(this.title)}`;
       this.level = 0;
     } else {
-      const parent = await mongoose.model("Deck").findById(this.parentDeckId);
+      const parent = await mongoose
+        .model("Deck")
+        .findById(this.parentDeckId)
+        .populate({
+          path: "parentDeckId",
+          select: "title parentDeckId",
+          populate: {
+            path: "parentDeckId",
+            select: "title parentDeckId",
+          },
+        });
       if (parent) {
-        this.path = `${parent.path}/${this._id}`;
+        this.path = `${parent.path}/${this._id}:${encodeURIComponent(
+          this.title
+        )}`;
         this.level = parent.level + 1;
         // Update parent's hasChildren flag
         await mongoose
@@ -112,7 +128,7 @@ deckSchema.pre("save", async function (this: IDeck, next) {
           .findByIdAndUpdate(this.parentDeckId, { hasChildren: true });
       } else {
         // If parent not found, treat as top-level deck
-        this.path = `/${this._id}`;
+        this.path = `${this._id}:${encodeURIComponent(this.title)}`;
         this.level = 0;
         this.parentDeckId = null;
       }

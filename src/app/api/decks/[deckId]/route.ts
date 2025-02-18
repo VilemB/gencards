@@ -22,10 +22,14 @@ export async function GET(
 
     const deck = await Deck.findById(deckId).populate({
       path: "parentDeckId",
-      select: "title parentDeckId",
+      select: "title parentDeckId description topic",
       populate: {
         path: "parentDeckId",
-        select: "title",
+        select: "title parentDeckId description topic",
+        populate: {
+          path: "parentDeckId",
+          select: "title parentDeckId description topic",
+        },
       },
     });
 
