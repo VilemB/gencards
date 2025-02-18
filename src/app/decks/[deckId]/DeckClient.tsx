@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   Sparkles,
   FolderOpen,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/Modal";
@@ -73,8 +74,6 @@ function CardPreview({
   return (
     <motion.div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
       initial={{ opacity: 0, y: 20 }}
       animate={{
         opacity: 1,
@@ -91,7 +90,7 @@ function CardPreview({
         damping: 30,
       }}
       className={cn(
-        "group relative overflow-hidden cursor-grab active:cursor-grabbing",
+        "group relative overflow-hidden",
         "bg-card hover:bg-accent/50 transition-colors",
         "border border-border rounded-xl",
         "shadow-sm hover:shadow-md",
@@ -116,12 +115,31 @@ function CardPreview({
         }
       }}
     >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className={cn(
+          "absolute top-3 left-3 p-2 -m-2 rounded-md cursor-grab active:cursor-grabbing z-10",
+          "text-muted-foreground hover:text-foreground",
+          "transition-all duration-200",
+          "focus:outline-none focus:ring-2 focus:ring-primary",
+          "opacity-0 group-hover:opacity-60 hover:opacity-100"
+        )}
+        onClick={(e) => e.stopPropagation()} // Prevent click from triggering card preview
+        role="button"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+
       <div
         onClick={onClick}
         className={cn(
-          "p-6",
+          "p-6 pl-12", // Added left padding to accommodate the drag handle
           "transition-all duration-200",
-          "hover:translate-y-[-2px]"
+          "hover:translate-y-[-2px]",
+          "cursor-pointer" // Added cursor-pointer to indicate clickable area
         )}
         role="button"
         tabIndex={0}
