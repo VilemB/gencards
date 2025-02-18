@@ -49,6 +49,7 @@ interface CardPreviewProps {
   question: string;
   onClick: () => void;
   index: number;
+  onDelete: (cardId: string) => void;
 }
 
 function CardPreview({
@@ -57,8 +58,15 @@ function CardPreview({
   index,
   card,
   isDragging,
+  onDelete,
 }: CardPreviewProps & { card: Card; isDragging: boolean }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging: isCardDragging,
+  } = useDraggable({
     id: card._id,
   });
 
@@ -68,18 +76,44 @@ function CardPreview({
       {...attributes}
       {...listeners}
       initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        scale: isCardDragging ? 1.05 : 1,
+        boxShadow: isCardDragging
+          ? "0 10px 25px -5px rgba(0,0,0,0.1)"
+          : "0 1px 3px rgba(0,0,0,0.1)",
+      }}
+      transition={{
+        delay: index * 0.05,
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      }}
       className={cn(
         "group relative overflow-hidden cursor-grab active:cursor-grabbing",
         "bg-card hover:bg-accent/50 transition-colors",
         "border border-border rounded-xl",
         "shadow-sm hover:shadow-md",
-        isDragging && "opacity-50"
+        isDragging && "opacity-50",
+        "focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
       )}
       style={{
         animationDelay: `${index * 50}ms`,
         transform: CSS.Transform.toString(transform),
+      }}
+      role="button"
+      aria-label={`Card ${index + 1}: ${question}`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+        // Add keyboard shortcuts for moving cards
+        if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          onDelete(card._id);
+        }
       }}
     >
       <div
@@ -91,12 +125,6 @@ function CardPreview({
         )}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onClick();
-          }
-        }}
       >
         <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
           <div
@@ -129,22 +157,34 @@ const DroppableSubdeck = ({
   subdeck: Deck;
   isDragging: boolean;
 }) => {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: `subdeck-${subdeck._id}`,
   });
   const router = useRouter();
 
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
+      animate={{
+        scale: isOver ? 1.02 : 1,
+        borderColor: isOver ? "#3b82f6" : "transparent",
+        backgroundColor: isOver
+          ? "rgba(59, 130, 246, 0.1)"
+          : "var(--neutral-50)",
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      }}
       className={cn(
-        "relative p-6 rounded-xl bg-[var(--neutral-50)] border-2 border-transparent transition-all cursor-pointer",
-        isDragging &&
-          "border-dashed border-[var(--primary)] bg-[var(--primary-50)]",
-        !isDragging && "hover:bg-[var(--neutral-100)]"
+        "relative p-6 rounded-xl border-2 border-dashed transition-all cursor-pointer bg-[var(--neutral-50)]",
+        isDragging && !isOver && "border-transparent",
+        !isDragging && "hover:bg-[var(--neutral-100)]",
+        "focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
       )}
       onClick={() => router.push(`/decks/${subdeck._id}`)}
-      role="link"
+      role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -152,6 +192,7 @@ const DroppableSubdeck = ({
           router.push(`/decks/${subdeck._id}`);
         }
       }}
+      aria-label={`Subdeck: ${subdeck.title}`}
     >
       <div className="flex items-center gap-3 mb-2">
         <FolderOpen className="h-5 w-5 text-[var(--primary)]" />
@@ -166,13 +207,13 @@ const DroppableSubdeck = ({
         <Book className="h-4 w-4" />
         <span>{subdeck.cardCount} cards</span>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 // Delete Drop Zone Component
 const DeleteDropZone = ({ isDragging }: { isDragging: boolean }) => {
-  const { setNodeRef } = useDroppable({ id: "delete-zone" });
+  const { setNodeRef, isOver } = useDroppable({ id: "delete-zone" });
 
   if (!isDragging) return null;
 
@@ -180,18 +221,44 @@ const DeleteDropZone = ({ isDragging }: { isDragging: boolean }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-8 left-1/2 transform -translate-x-1/2"
+      exit={{ opacity: 0, y: 20 }}
+      className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
     >
-      <div
+      <motion.div
         ref={setNodeRef}
+        animate={{
+          scale: isOver ? 1.1 : 1,
+          backgroundColor: isOver ? "rgb(254 226 226)" : "rgb(254 242 242)",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+        }}
         className={cn(
-          "p-4 rounded-lg bg-red-100 border-2 border-dashed border-red-400 flex items-center gap-2",
-          "transition-all duration-200"
+          "p-4 rounded-lg border-2 border-dashed border-red-400 flex items-center gap-2",
+          "transition-all duration-200",
+          "shadow-lg",
+          isOver && "border-red-500"
         )}
+        role="button"
+        aria-label="Delete zone"
       >
-        <Trash2 className="h-5 w-5 text-red-500" />
-        <span className="text-red-600 font-medium">Drop to delete</span>
-      </div>
+        <Trash2
+          className={cn(
+            "h-5 w-5 transition-colors",
+            isOver ? "text-red-600" : "text-red-500"
+          )}
+        />
+        <span
+          className={cn(
+            "font-medium transition-colors",
+            isOver ? "text-red-700" : "text-red-600"
+          )}
+        >
+          Drop to delete
+        </span>
+      </motion.div>
     </motion.div>
   );
 };
@@ -405,12 +472,21 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
     if (card) {
       setActiveCard(card);
       setIsDragging(true);
+      // Add haptic feedback if supported
+      if (window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
     }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setIsDragging(false);
     setActiveCard(null);
+
+    // Add haptic feedback if supported
+    if (window.navigator.vibrate) {
+      window.navigator.vibrate([50, 50]);
+    }
 
     const { active, over } = event;
     if (!over) return;
@@ -475,6 +551,14 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
         toast.error("Failed to move card");
       }
     }
+  };
+
+  const handleCardDelete = (cardId: string) => {
+    const deleteEvent = {
+      active: { id: cardId },
+      over: { id: "delete-zone" },
+    };
+    handleDragEnd(deleteEvent as DragEndEvent);
   };
 
   // Keyboard shortcuts
@@ -734,6 +818,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                   index={index}
                   card={card}
                   isDragging={isDragging}
+                  onDelete={handleCardDelete}
                 />
               ))}
           </div>
