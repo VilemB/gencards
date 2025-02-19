@@ -297,7 +297,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [responseType, setResponseType] = useState<"simple" | "complex">(
-    "complex"
+    "simple"
   );
   const [subdecks, setSubdecks] = useState<Deck[]>([]);
   const [activeCard, setActiveCard] = useState<Card | null>(null);

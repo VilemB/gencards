@@ -136,7 +136,7 @@ export default function EditDeckClient({ deckId }: Props) {
   const [parentDeckId, setParentDeckId] = useState<string | null>(null);
   const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
   const [responseType, setResponseType] = useState<"simple" | "complex">(
-    "complex"
+    "simple"
   );
 
   // Form state
