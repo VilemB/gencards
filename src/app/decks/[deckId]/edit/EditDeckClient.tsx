@@ -8,7 +8,6 @@ import {
   Plus,
   X,
   AlertTriangle,
-  GripVertical,
   Eye,
   ChevronLeft,
   ChevronRight,
@@ -26,11 +25,11 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
-import RichTextEditor from "@/components/editor/RichTextEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CardEditor } from "@/components/CardEditor";
 
 interface Card {
   _id: string;
@@ -794,133 +793,20 @@ export default function EditDeckClient({ deckId }: Props) {
                         index={index}
                       >
                         {(provided, snapshot) => (
-                          <motion.div
-                            ref={provided.innerRef}
+                          <CardEditor
+                            id={card.id}
+                            front={card.front}
+                            back={card.back}
+                            index={index}
+                            isDragging={snapshot.isDragging}
+                            dragHandleProps={
+                              provided.dragHandleProps || undefined
+                            }
+                            onRemove={handleRemoveCard}
+                            onChange={handleCardChange}
                             {...provided.draggableProps}
-                            initial={false}
-                            animate={{
-                              scale: snapshot.isDragging ? 1.02 : 1,
-                              boxShadow: snapshot.isDragging
-                                ? "0 10px 25px -5px rgba(0,0,0,0.1)"
-                                : "0 1px 3px rgba(0,0,0,0.1)",
-                              zIndex: snapshot.isDragging ? 1 : 0,
-                              backgroundColor: snapshot.isDragging
-                                ? "rgb(243, 244, 246)" // gray-100
-                                : "rgb(249, 250, 251)", // gray-50
-                            }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 300,
-                              damping: 30,
-                            }}
-                            className={cn(
-                              "relative rounded-lg p-4",
-                              "focus-within:ring-2 focus-within:ring-[var(--primary)] focus-within:ring-opacity-50"
-                            )}
-                            role="group"
-                            aria-label={`Card ${index + 1}`}
-                          >
-                            <div className="absolute top-4 right-4 flex items-center gap-2">
-                              <div
-                                {...provided.dragHandleProps}
-                                className={cn(
-                                  "group/handle p-2 -m-2 rounded-md",
-                                  "cursor-grab active:cursor-grabbing",
-                                  "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
-                                  "transition-all duration-200",
-                                  "hover:bg-[var(--neutral-200)] focus:bg-[var(--neutral-200)]",
-                                  "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                                )}
-                                role="button"
-                                tabIndex={0}
-                                aria-label="Drag to reorder"
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    // Add haptic feedback if supported
-                                    if (window.navigator.vibrate) {
-                                      window.navigator.vibrate(50);
-                                    }
-                                  }
-                                  // Add keyboard shortcuts for reordering
-                                  if (e.ctrlKey || e.metaKey) {
-                                    if (e.key === "ArrowUp" && index > 0) {
-                                      e.preventDefault();
-                                      const newCards = Array.from(cards);
-                                      const [movedCard] = newCards.splice(
-                                        index,
-                                        1
-                                      );
-                                      newCards.splice(index - 1, 0, movedCard);
-                                      setCards(newCards);
-                                    } else if (
-                                      e.key === "ArrowDown" &&
-                                      index < cards.length - 1
-                                    ) {
-                                      e.preventDefault();
-                                      const newCards = Array.from(cards);
-                                      const [movedCard] = newCards.splice(
-                                        index,
-                                        1
-                                      );
-                                      newCards.splice(index + 1, 0, movedCard);
-                                      setCards(newCards);
-                                    }
-                                  }
-                                }}
-                              >
-                                <GripVertical className="h-4 w-4" />
-                                <span className="sr-only">Drag to reorder</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveCard(index)}
-                                className={cn(
-                                  "p-2 -m-2 rounded-md",
-                                  "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
-                                  "transition-all duration-200",
-                                  "hover:bg-[var(--neutral-200)] focus:bg-[var(--neutral-200)]",
-                                  "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                                )}
-                                aria-label="Remove card"
-                              >
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">Remove card</span>
-                              </button>
-                            </div>
-                            <div className="grid md:grid-cols-2 gap-4 pr-16">
-                              <div>
-                                <label
-                                  htmlFor={`front-${index}`}
-                                  className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                                >
-                                  Front
-                                </label>
-                                <RichTextEditor
-                                  content={card.front}
-                                  onChange={(content) =>
-                                    handleCardChange(index, "front", content)
-                                  }
-                                  placeholder="Enter card front"
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor={`back-${index}`}
-                                  className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-                                >
-                                  Back
-                                </label>
-                                <RichTextEditor
-                                  content={card.back}
-                                  onChange={(content) =>
-                                    handleCardChange(index, "back", content)
-                                  }
-                                  placeholder="Enter card back"
-                                />
-                              </div>
-                            </div>
-                          </motion.div>
+                            ref={provided.innerRef}
+                          />
                         )}
                       </Draggable>
                     ))}

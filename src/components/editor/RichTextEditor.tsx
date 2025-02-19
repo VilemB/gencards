@@ -14,17 +14,20 @@ import {
   Redo,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Props {
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
+  className?: string;
 }
 
 export default function RichTextEditor({
   content,
   onChange,
   placeholder = "Start typing...",
+  className,
 }: Props) {
   const editor = useEditor({
     extensions: [
@@ -32,14 +35,20 @@ export default function RichTextEditor({
       Placeholder.configure({
         placeholder,
         emptyEditorClass:
-          "before:content-[attr(data-placeholder)] before:text-[var(--text-secondary)] before:float-left before:pointer-events-none",
+          "before:content-[attr(data-placeholder)] before:text-muted-foreground before:float-left before:pointer-events-none before:h-0",
       }),
     ],
     content,
     editorProps: {
       attributes: {
-        class:
-          "prose prose-neutral max-w-none focus:outline-none min-h-[100px] px-3 py-2",
+        class: cn(
+          "prose dark:prose-invert prose-sm focus:outline-none",
+          "prose-p:my-0 prose-headings:mb-3 prose-headings:mt-0",
+          "prose-blockquote:my-0 prose-ul:my-0 prose-ol:my-0",
+          "min-h-[120px] max-h-[300px] overflow-y-auto px-3 py-2",
+          "selection:bg-primary/20",
+          className
+        ),
       },
     },
     onUpdate: ({ editor }) => {
@@ -65,92 +74,108 @@ export default function RichTextEditor({
     return null;
   }
 
+  const ToolbarButton = ({
+    isActive,
+    onClick,
+    children,
+    disabled,
+  }: {
+    isActive?: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+    disabled?: boolean;
+  }) => (
+    <Button
+      type="button"
+      size="icon"
+      variant="ghost"
+      onClick={onClick}
+      className={cn(
+        "h-8 w-8",
+        "hover:bg-muted hover:text-foreground",
+        "active:bg-muted",
+        "focus-visible:ring-1 focus-visible:ring-offset-0",
+        isActive && "bg-muted text-foreground"
+      )}
+      disabled={disabled}
+    >
+      {children}
+    </Button>
+  );
+
   return (
-    <div className="border border-[var(--neutral-200)] rounded-lg overflow-hidden bg-[var(--background)]">
-      <div className="border-b border-[var(--neutral-200)] p-2 flex flex-wrap gap-1">
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive("bold") ? "bg-[var(--neutral-100)]" : ""}
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive("italic") ? "bg-[var(--neutral-100)]" : ""}
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={
-            editor.isActive("bulletList") ? "bg-[var(--neutral-100)]" : ""
-          }
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={
-            editor.isActive("orderedList") ? "bg-[var(--neutral-100)]" : ""
-          }
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          className={
-            editor.isActive("codeBlock") ? "bg-[var(--neutral-100)]" : ""
-          }
-        >
-          <Code className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={
-            editor.isActive("blockquote") ? "bg-[var(--neutral-100)]" : ""
-          }
-        >
-          <Quote className="h-4 w-4" />
-        </Button>
+    <div className="relative flex flex-col rounded-md border bg-card text-card-foreground">
+      <div className="flex items-center gap-1 border-b p-1">
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            isActive={editor.isActive("bold")}
+          >
+            <Bold className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            isActive={editor.isActive("italic")}
+          >
+            <Italic className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
+        <div className="mx-1 h-4 w-[1px] bg-border" />
+
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            isActive={editor.isActive("bulletList")}
+          >
+            <List className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            isActive={editor.isActive("orderedList")}
+          >
+            <ListOrdered className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
+        <div className="mx-1 h-4 w-[1px] bg-border" />
+
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            isActive={editor.isActive("codeBlock")}
+          >
+            <Code className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            isActive={editor.isActive("blockquote")}
+          >
+            <Quote className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
         <div className="flex-1" />
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-        >
-          <Redo className="h-4 w-4" />
-        </Button>
+
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+          >
+            <Undo className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+          >
+            <Redo className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
       </div>
-      <EditorContent editor={editor} />
+
+      <div className="min-h-[120px]">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }
