@@ -15,7 +15,6 @@ import {
   Eye,
   Plus,
   ChevronLeft,
-  Sparkles,
   FolderOpen,
   GripVertical,
 } from "lucide-react";
@@ -29,7 +28,7 @@ import { CardPreviewModal } from "@/components/ui/CardPreviewModal";
 import { useHotkeys } from "react-hotkeys-hook";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
+import { GenerateButton } from "@/components/ui/GenerateButton";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -294,11 +293,6 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [responseType, setResponseType] = useState<"simple" | "complex">(
-    "simple"
-  );
   const [subdecks, setSubdecks] = useState<Deck[]>([]);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -392,96 +386,6 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
     if (selectedCard !== null && selectedCard > 0) {
       setSelectedCard(selectedCard - 1);
       setIsCardFlipped(false);
-    }
-  };
-
-  const handleAIAssist = async (
-    topic: string,
-    count: number,
-    createNewDeck: boolean,
-    responseType: "simple" | "complex"
-  ) => {
-    if (!deck?.topic) {
-      toast.error("No topic found for this deck");
-      return;
-    }
-
-    setIsGenerating(true);
-
-    const loadingToast = toast.loading(
-      <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Generating your flashcards...</span>
-      </div>
-    );
-
-    try {
-      const response = await fetch("/api/decks/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          topic: `${deck.topic} - ${topic}`,
-          count,
-          createNewDeck,
-          responseType,
-          deckId: createNewDeck ? null : deckId,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to generate flashcards");
-      }
-
-      const data = await response.json();
-      toast.dismiss(loadingToast);
-
-      if (createNewDeck) {
-        toast.success("New deck created successfully!");
-        router.push(`/decks/${data.deckId}`);
-        return;
-      }
-
-      // Add the new cards to the deck
-      const updatedCards = [...(deck?.cards || []), ...data.cards];
-
-      // Save the changes
-      const saveResponse = await fetch(`/api/decks/${deckId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...deck,
-          cards: updatedCards,
-          cardCount: updatedCards.length,
-        }),
-      });
-
-      if (!saveResponse.ok) {
-        throw new Error("Failed to save changes");
-      }
-
-      // Show success message
-      toast.success(`Generated ${data.cards.length} new flashcards!`);
-
-      // Reload the deck
-      const deckResponse = await fetch(`/api/decks/${deckId}`);
-      if (!deckResponse.ok) {
-        throw new Error("Failed to reload deck");
-      }
-      const updatedDeck = await deckResponse.json();
-      setDeck(updatedDeck);
-    } catch (error) {
-      console.error("Error generating flashcards:", error);
-      toast.dismiss(loadingToast);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to generate flashcards"
-      );
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -701,19 +605,16 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 <div className="flex flex-wrap gap-3 mt-6 md:mt-0 animate-slide-up-delayed">
                   {isOwner && (
                     <div className="flex flex-row gap-2 w-full">
-                      <Button
+                      <GenerateButton
+                        deckId={deckId}
+                        deckTopic={deck.topic}
+                        onSuccess={() => {
+                          // Reload the deck after successful generation
+                          router.refresh();
+                        }}
                         variant="outline"
-                        onClick={() => setShowGenerateModal(true)}
                         className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-1/2"
-                        disabled={isGenerating}
-                      >
-                        {isGenerating ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4 mr-2" />
-                        )}
-                        AI Generate
-                      </Button>
+                      />
                       <Button
                         variant="outline"
                         onClick={() =>
@@ -949,19 +850,6 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
               onClose={() => setShowShareToast(false)}
             />
           )}
-
-          {/* Generate Cards Modal */}
-          <GenerateCardsModal
-            isOpen={showGenerateModal}
-            onClose={() => setShowGenerateModal(false)}
-            title="Generate Cards with AI"
-            description="Let AI help you create high-quality flashcards for your deck."
-            responseType={responseType}
-            onResponseTypeChange={setResponseType}
-            onGenerate={handleAIAssist}
-            isLoading={isGenerating}
-            deckTitle={deck?.topic}
-          />
         </div>
       </div>
     </DndContext>

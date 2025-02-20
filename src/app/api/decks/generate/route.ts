@@ -65,9 +65,9 @@ export async function POST(request: Request) {
 
     const {
       topic,
+      promptContext,
       count = 5,
       createNewDeck = false,
-      responseType = "complex",
       deckId = null,
     } = await request.json();
 
@@ -82,110 +82,83 @@ export async function POST(request: Request) {
     const deckChain = await getDeckChain(deckId);
     const existingCards = await getExistingCards(deckId);
 
-    // Split the topic to extract deck context and specific topic
-    const [deckContext, specificTopic] = topic
-      .split(" - ")
-      .map((t: string) => t.trim());
+    // Extract context from promptContext
+    const { mainTopic, subtopic, instructions, format } = promptContext;
 
-    // Validate the context matches the deck's topic if adding to existing deck
-    if (deckId) {
-      const deck = await Deck.findById(deckId);
-      if (deck && deck.topic.toLowerCase() !== deckContext.toLowerCase()) {
-        return NextResponse.json(
-          {
-            error: `Cards must be in the same context as the deck (${deck.topic})`,
-          },
-          { status: 400 }
-        );
-      }
-    }
+    const systemPrompt = `You are an expert educator specializing in ${mainTopic}. Your task is to create educational flashcards that are DIRECT EXAMPLES of ${subtopic} in ${mainTopic}.
 
-    let promptInstructions = "";
-    if (responseType === "simple") {
-      promptInstructions = `Create ${count} concise flashcards about "${specificTopic}" STRICTLY in ${deckContext} language/context only.
-Each flashcard should follow these guidelines:
-- Front: A single word or very short phrase about ${specificTopic} in ${deckContext} ONLY
-- Back: A direct, simple answer without additional explanation
-- Keep both question and answer as brief as possible
-- No HTML formatting needed
-- Focus on core concepts only
-- IMPORTANT: You MUST ONLY create content related to ${deckContext}. DO NOT include content from any other language or context
-- IMPORTANT: DO NOT create cards that are too similar to the existing cards listed below
-- IMPORTANT: If this is a language deck, all content MUST be in ${deckContext} language or about ${deckContext} language`;
-    } else {
-      promptInstructions = `Create ${count} detailed flashcards about "${specificTopic}" STRICTLY in ${deckContext} language/context only.
-Each flashcard should follow these guidelines:
-- Front: A clear, concise question or key term about ${specificTopic} in ${deckContext} ONLY
-- Back: A comprehensive explanation with examples and context
-- Content should be accurate and educational
-- Use appropriate HTML formatting with <p>, <ul>, <li> tags for structure
-- Ensure progressive difficulty from basic to advanced concepts
-- Include real-world examples where relevant
-- IMPORTANT: You MUST ONLY create content related to ${deckContext}. DO NOT include content from any other language or context
-- IMPORTANT: DO NOT create cards that are too similar to the existing cards listed below
-- IMPORTANT: If this is a language deck, all content MUST be in ${deckContext} language or about ${deckContext} language`;
-    }
+Key Requirements:
+1. Each card must be a DIRECT EXAMPLE, not an explanation or definition
+2. Stay strictly within the context of ${mainTopic}
+3. Never mix content from different contexts
 
-    // Add deck chain context if available
-    const deckChainContext =
-      deckChain.length > 0
-        ? `\nThis flashcard set is part of the following deck hierarchy (from root to current): ${deckChain.join(
-            " → "
-          )}`
-        : "";
+Context-Specific Guidelines:
+- For Languages (e.g., Korean, Spanish):
+  * Front: The actual word/phrase in the target language
+  * Back: Translation + pronunciation (if relevant)
+  * Example for "verbs": Front: "먹다" Back: "to eat (meokda)"
+  * NO grammar explanations or definitions about verbs
 
-    // Add existing cards to avoid duplicates
-    const existingCardsContext =
-      existingCards.length > 0
-        ? `\n\nExisting cards in this deck (DO NOT create similar ones):\n${existingCards
-            .map((card) => `- Front: "${card.front}"\n  Back: "${card.back}"`)
-            .join("\n")}`
-        : "";
+- For Sciences:
+  * Front: Specific example/instance
+  * Back: Explanation/application
+  * Example for "elements": Front: "Fe" Back: "Iron - Used in hemoglobin"
+  * NO general definitions about what elements are
 
-    const prompt = `${promptInstructions}${deckChainContext}${existingCardsContext}
+- For Mathematics:
+  * Front: Specific problem/equation
+  * Back: Solution/result
+  * Example for "equations": Front: "2x + 5 = 15" Back: "x = 5"
+  * NO explanations about what equations are
 
-IMPORTANT: Your task is to create flashcards ONLY for ${deckContext}. If you're asked to generate content for any other context, you must refuse.
+- For History:
+  * Front: Specific event/date
+  * Back: Significance/outcome
+  * Example for "battles": Front: "Battle of Hastings 1066" Back: "Norman Conquest of England"
+  * NO general descriptions about battles
 
-Return the response in this exact JSON format:
+Quality Standards:
+- Each card must be a concrete example
+- No theoretical explanations unless specifically requested
+- Keep responses clear and concise
+- Use appropriate formatting
+- Avoid duplicating existing cards
+- Consider the full context hierarchy
+
+Format your response as valid JSON:
 {
   "flashcards": [
     {
-      "front": "question or term",
-      "back": "answer or definition"
+      "front": "actual example",
+      "back": "meaning/translation/result"
     }
   ]
 }`;
 
+    const userPrompt = `${instructions}
+
+Context:
+- Main Topic: ${mainTopic}
+- Subtopic: ${subtopic}
+- Format: ${format}
+- Deck Chain: ${deckChain.join(" > ")}
+
+${
+  existingCards.length > 0
+    ? `Existing cards (avoid duplicates):
+${existingCards
+  .map((card) => `- Front: "${card.front}" Back: "${card.back}"`)
+  .join("\n")}`
+    : ""
+}
+
+Create ${count} flashcards that are DIRECT EXAMPLES of ${subtopic} in ${mainTopic}.`;
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: `You are an expert educator specializing in ${deckContext}. Your task is to create educational flashcards about ${specificTopic}, but ONLY in the context of ${deckContext}.
-
-IMPORTANT: You must NEVER generate content for any other context besides ${deckContext}. If the request seems to mix contexts, focus ONLY on ${deckContext}.
-
-Adapt your response based on the subject matter:
-- For Languages: Include native script, pronunciation, and cultural context ONLY for ${deckContext} language
-- For Sciences: Include precise definitions, formulas, and real-world applications in the field of ${deckContext}
-- For History/Literature: Include dates, key figures, and contextual significance specific to ${deckContext}
-- For Mathematics: Include formulas, step-by-step solutions, and practical examples in ${deckContext}
-- For Arts: Include terminology, techniques, and visual descriptions related to ${deckContext}
-- For Other Subjects: Focus on core concepts and practical applications in ${deckContext}
-
-General guidelines:
-- Ensure accuracy and educational value
-- Progress from fundamental to advanced concepts
-- Include relevant examples and applications
-- Use clear, concise language
-- Maintain proper formatting with HTML tags when needed
-- Avoid creating cards similar to existing ones
-- Consider the full deck hierarchy context when creating new cards
-- NEVER mix content from different contexts or languages
-
-Your responses must be well-structured and in valid JSON format.`,
-        },
-        { role: "user", content: prompt },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ],
       temperature: 0.7,
     });
@@ -251,6 +224,26 @@ Your responses must be well-structured and in valid JSON format.`,
     }
 
     // Otherwise just return the generated cards
+    if (deckId) {
+      await connectToDatabase();
+
+      // Update existing deck with new cards
+      const deck = await Deck.findById(deckId);
+      if (!deck) {
+        throw new Error("Deck not found");
+      }
+
+      // Add new cards to the deck
+      const newCards = parsedResponse.flashcards.map((card: Flashcard) => ({
+        front: card.front,
+        back: card.back,
+      }));
+
+      deck.cards.push(...newCards);
+      deck.cardCount = deck.cards.length;
+      await deck.save();
+    }
+
     return NextResponse.json({ cards: parsedResponse.flashcards });
   } catch (error: unknown) {
     console.error("Error generating flashcards:", error);

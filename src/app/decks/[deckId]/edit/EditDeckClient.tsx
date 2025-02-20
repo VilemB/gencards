@@ -11,7 +11,6 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Book,
   Globe2,
   Lock,
@@ -26,8 +25,7 @@ import {
   DropResult,
 } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
-import { GenerateCardsModal } from "@/components/ui/GenerateCardsModal";
-import { toast } from "sonner";
+import { GenerateButton } from "@/components/ui/GenerateButton";
 import { cn } from "@/lib/utils";
 import { CardEditor } from "@/components/CardEditor";
 
@@ -127,16 +125,8 @@ export default function EditDeckClient({ deckId }: Props) {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [generationCount, setGenerationCount] = useState(5);
-  const [createNewDeck, setCreateNewDeck] = useState(false);
-  const [generationTopic, setGenerationTopic] = useState("");
   const [parentDeckId, setParentDeckId] = useState<string | null>(null);
   const [availableParentDecks, setAvailableParentDecks] = useState<Deck[]>([]);
-  const [responseType, setResponseType] = useState<"simple" | "complex">(
-    "simple"
-  );
 
   // Form state
   const [title, setTitle] = useState("");
@@ -298,132 +288,6 @@ export default function EditDeckClient({ deckId }: Props) {
     if (currentPreviewIndex > 0) {
       setCurrentPreviewIndex(currentPreviewIndex - 1);
       setIsCardFlipped(false);
-    }
-  };
-
-  const handleAIAssist = async () => {
-    if (!topic) {
-      setError("Please enter a topic before using AI assist");
-      return;
-    }
-
-    if (!generationTopic) {
-      setError("Please enter what you want to learn about");
-      return;
-    }
-
-    setIsGenerating(true);
-    setError("");
-    setShowGenerateModal(false);
-
-    // Create a loading toast that persists
-    const loadingToast = toast.loading(
-      <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Generating your flashcards...</span>
-      </div>
-    );
-
-    try {
-      const response = await fetch("/api/decks/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          topic: `${topic} - ${generationTopic}`,
-          count: generationCount,
-          createNewDeck,
-          responseType,
-          deckId: createNewDeck ? null : deckId,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to generate flashcards");
-      }
-
-      const data = await response.json();
-
-      // Dismiss the loading toast
-      toast.dismiss(loadingToast);
-
-      if (createNewDeck) {
-        toast.success("New deck created successfully!");
-        // Redirect to the new deck
-        router.push(`/decks/${data.deckId}`);
-        return;
-      }
-
-      // Add generated cards to existing cards, checking for duplicates
-      const newCards = data.cards
-        .filter(
-          (newCard: { front: string; back: string }) =>
-            !cards.some(
-              (existingCard) =>
-                existingCard.front === newCard.front ||
-                existingCard.back === newCard.back
-            )
-        )
-        .map((card: { front: string; back: string }) => ({
-          id: `new-${cards.length + Math.random()}`,
-          front: card.front,
-          back: card.back,
-        }));
-
-      if (newCards.length === 0) {
-        toast.error(
-          "All generated cards are already in your deck. Try a different topic or count."
-        );
-        return;
-      }
-
-      // Show success message with the number of cards added
-      toast.success(`Generated ${newCards.length} new flashcards!`);
-
-      // Add the new cards to the deck
-      const updatedCards = [...cards, ...newCards];
-      setCards(updatedCards);
-
-      // Automatically save the changes
-      setIsSaving(true);
-      const saveResponse = await fetch(`/api/decks/${deckId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          topic,
-          isPublic,
-          parentDeckId,
-          cards: updatedCards.map(({ front, back }) => ({ front, back })),
-          cardCount: updatedCards.length,
-        }),
-      });
-
-      if (!saveResponse.ok) {
-        throw new Error("Failed to save changes");
-      }
-
-      // Navigate back to the deck view
-      router.push(`/decks/${deckId}`);
-    } catch (err) {
-      console.error("Error generating flashcards:", err);
-      // Dismiss the loading toast
-      toast.dismiss(loadingToast);
-      // Show error toast
-      toast.error(
-        err instanceof Error ? err.message : "Failed to generate flashcards"
-      );
-      setError(
-        err instanceof Error ? err.message : "Failed to generate flashcards"
-      );
-    } finally {
-      setIsGenerating(false);
-      setIsSaving(false);
     }
   };
 
@@ -743,25 +607,27 @@ export default function EditDeckClient({ deckId }: Props) {
                 Cards
               </h2>
               <div className="flex items-center gap-2">
-                <Button
-                  type="button"
+                <GenerateButton
+                  deckId={deckId}
+                  deckTopic={topic}
+                  onSuccess={async () => {
+                    // Reload the deck after successful generation
+                    const response = await fetch(`/api/decks/${deckId}`);
+                    if (response.ok) {
+                      const data = await response.json();
+                      setDeck(data);
+                      setCards(
+                        data.cards.map((card: Card) => ({
+                          id: card._id,
+                          front: card.front,
+                          back: card.back,
+                        }))
+                      );
+                    }
+                  }}
                   variant="outline"
-                  onClick={() => setShowGenerateModal(true)}
-                  disabled={isGenerating || !topic}
                   className="gap-2"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      AI Generate
-                    </>
-                  )}
-                </Button>
+                />
                 <Button
                   type="button"
                   variant="outline"
@@ -867,124 +733,6 @@ export default function EditDeckClient({ deckId }: Props) {
             onClose={() => setShowSuccessToast(false)}
           />
         )}
-
-        {/* Generate Cards Modal */}
-        <GenerateCardsModal
-          isOpen={showGenerateModal}
-          onClose={() => setShowGenerateModal(false)}
-          title="Generate Cards with AI"
-          description="Let AI help you create high-quality flashcards for your deck."
-          responseType={responseType}
-          onResponseTypeChange={setResponseType}
-          onGenerate={async (topic, count, createNewDeck) => {
-            setGenerationTopic(topic);
-            setGenerationCount(count);
-            setCreateNewDeck(createNewDeck);
-            await handleAIAssist();
-          }}
-          isLoading={isGenerating}
-          deckTitle={topic}
-        >
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
-                What do you want to learn about?
-              </label>
-              <input
-                type="text"
-                value={generationTopic}
-                onChange={(e) => setGenerationTopic(e.target.value)}
-                placeholder="e.g., animals, verbs, food, numbers..."
-                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-              />
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Specify what kind of {topic} content you want to learn
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
-                Number of Cards
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="20"
-                value={generationCount}
-                onChange={(e) =>
-                  setGenerationCount(
-                    Math.min(20, Math.max(1, parseInt(e.target.value) || 1))
-                  )
-                }
-                className="block w-full rounded-lg border border-[var(--neutral-200)] bg-[var(--background)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] sm:text-sm"
-              />
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Choose between 1-20 cards to generate
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="createNewDeck"
-                checked={createNewDeck}
-                onChange={(e) => setCreateNewDeck(e.target.checked)}
-                className="h-4 w-4 rounded border-[var(--neutral-200)] text-[var(--primary)] focus:ring-[var(--primary)]"
-              />
-              <label
-                htmlFor="createNewDeck"
-                className="text-sm text-[var(--text-primary)]"
-              >
-                Create as new deck
-              </label>
-            </div>
-
-            <div className="bg-[var(--neutral-50)] rounded-lg p-4 text-sm text-[var(--text-secondary)]">
-              <p>
-                The AI will generate {generationCount} flashcard
-                {generationCount !== 1 ? "s" : ""} about{" "}
-                <strong>
-                  {topic} - {generationTopic || "[Topic]"}
-                </strong>
-              </p>
-              {createNewDeck ? (
-                <p className="mt-2">
-                  A new deck will be created with these cards.
-                </p>
-              ) : (
-                <p className="mt-2">
-                  The cards will be added to your current deck.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => setShowGenerateModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAIAssist}
-              disabled={isGenerating || !topic || !generationTopic}
-              className="gap-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Generate Cards
-                </>
-              )}
-            </Button>
-          </div>
-        </GenerateCardsModal>
       </div>
     </div>
   );
