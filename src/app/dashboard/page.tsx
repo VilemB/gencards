@@ -152,10 +152,10 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-baseline gap-2">
                 <p className="text-4xl font-bold text-[var(--text-primary)]">
-                  {userData?.streak || 0}
+                  {userData.streak}
                 </p>
                 <p className="text-[var(--text-secondary)]">
-                  {userData?.streak === 1 ? "day" : "days"}
+                  {userData.streak === 1 ? "day" : "days"}
                 </p>
               </div>
             </div>
