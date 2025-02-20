@@ -23,7 +23,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Toast } from "@/components/ui/Toast";
 import { DeckBreadcrumb } from "@/components/DeckBreadcrumb";
 import { motion } from "framer-motion";
-import { Deck, Card } from "@/types/deck";
+import { Deck, Card, PopulatedDeck } from "@/types/deck";
 import { CardPreviewModal } from "@/components/ui/CardPreviewModal";
 import { useHotkeys } from "react-hotkeys-hook";
 import { cn } from "@/lib/utils";
@@ -280,6 +280,65 @@ const DeleteDropZone = ({ isDragging }: { isDragging: boolean }) => {
   );
 };
 
+// Add ParentDeckDropZone Component
+const ParentDeckDropZone = ({
+  isDragging,
+  parentDeck,
+}: {
+  isDragging: boolean;
+  parentDeck: Deck;
+}) => {
+  const { setNodeRef, isOver } = useDroppable({ id: "parent-deck" });
+
+  if (!isDragging) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50"
+    >
+      <motion.div
+        ref={setNodeRef}
+        animate={{
+          scale: isOver ? 1.1 : 1,
+          backgroundColor: isOver ? "rgb(226 232 240)" : "rgb(241 245 249)",
+          borderColor: isOver ? "var(--primary)" : "rgb(226 232 240)",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+        }}
+        className={cn(
+          "p-4 rounded-lg border-2 border-dashed flex items-center gap-3",
+          "transition-all duration-200",
+          "shadow-lg"
+        )}
+      >
+        <FolderOpen
+          className={cn(
+            "h-5 w-5 transition-colors",
+            isOver ? "text-[var(--primary)]" : "text-slate-500"
+          )}
+        />
+        <div>
+          <p
+            className={cn(
+              "font-medium transition-colors",
+              isOver ? "text-[var(--primary)]" : "text-slate-700"
+            )}
+          >
+            Move to {parentDeck.title}
+          </p>
+          <p className="text-sm text-slate-500">{parentDeck.cardCount} cards</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -296,6 +355,7 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
   const [subdecks, setSubdecks] = useState<Deck[]>([]);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [parentDeck, setParentDeck] = useState<Deck | null>(null);
 
   useEffect(() => {
     async function loadDeck() {
@@ -332,6 +392,31 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
     }
     loadSubdecks();
   }, [deckId]);
+
+  // Update the effect to load parent deck
+  useEffect(() => {
+    async function loadParentDeck() {
+      if (initialDeck?.parentDeckId) {
+        try {
+          const parentId =
+            typeof initialDeck.parentDeckId === "string"
+              ? initialDeck.parentDeckId
+              : (initialDeck.parentDeckId as PopulatedDeck)._id;
+
+          if (!parentId) return;
+
+          const response = await fetch(`/api/decks/${parentId}`);
+          if (response.ok) {
+            const data = await response.json();
+            setParentDeck(data);
+          }
+        } catch (err) {
+          console.error("Error loading parent deck:", err);
+        }
+      }
+    }
+    loadParentDeck();
+  }, [initialDeck?.parentDeckId]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -414,6 +499,48 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
     if (!over) return;
 
     const overId = String(over.id);
+
+    if (overId === "parent-deck") {
+      // Handle moving card to parent deck
+      try {
+        const parentId =
+          typeof deck?.parentDeckId === "string"
+            ? deck.parentDeckId
+            : (deck?.parentDeckId as PopulatedDeck)?._id;
+
+        if (!parentId) {
+          toast.error("Parent deck not found");
+          return;
+        }
+
+        const response = await fetch(`/api/decks/${parentId}/cards`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cardId: active.id,
+            sourceDeckId: deckId,
+          }),
+        });
+        if (!response.ok) throw new Error("Failed to move card");
+
+        // Update local state
+        setDeck((prev) =>
+          prev
+            ? {
+                ...prev,
+                cards: prev.cards.filter((card) => card._id !== active.id),
+                cardCount: prev.cardCount - 1,
+              }
+            : null
+        );
+
+        toast.success("Card moved to parent deck");
+      } catch (error) {
+        console.error("Failed to move card:", error);
+        toast.error("Failed to move card");
+      }
+      return;
+    }
 
     if (overId === "delete-zone") {
       // Handle card deletion
@@ -736,6 +863,14 @@ export default function DeckClient({ deckId, deck: initialDeck }: Props) {
                 />
               ))}
           </div>
+
+          {/* Parent Deck Drop Zone */}
+          {parentDeck && isDragging && (
+            <ParentDeckDropZone
+              isDragging={isDragging}
+              parentDeck={parentDeck}
+            />
+          )}
 
           {/* Delete Drop Zone */}
           <DeleteDropZone isDragging={isDragging} />
