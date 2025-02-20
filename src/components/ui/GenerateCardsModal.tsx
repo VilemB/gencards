@@ -37,7 +37,9 @@ export function GenerateCardsModal({
   const [count, setCount] = useState(5);
   const [createNewDeck, setCreateNewDeck] = useState(false);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent form submission
+    e.stopPropagation(); // Stop event propagation
     await onGenerate(topic, count, createNewDeck, responseType);
     setTopic("");
     setCount(5);
@@ -51,7 +53,7 @@ export function GenerateCardsModal({
       title={title}
       description={description}
     >
-      <div className="space-y-4 py-4">
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4 py-4">
         <div>
           <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
             What do you want to learn about?
@@ -95,7 +97,11 @@ export function GenerateCardsModal({
             <Button
               type="button"
               variant={responseType === "simple" ? "default" : "outline"}
-              onClick={() => onResponseTypeChange("simple")}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onResponseTypeChange("simple");
+              }}
               className={cn(
                 "flex-1",
                 responseType === "simple" && "bg-[var(--primary)]"
@@ -106,7 +112,11 @@ export function GenerateCardsModal({
             <Button
               type="button"
               variant={responseType === "complex" ? "default" : "outline"}
-              onClick={() => onResponseTypeChange("complex")}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onResponseTypeChange("complex");
+              }}
               className={cn(
                 "flex-1",
                 responseType === "complex" && "bg-[var(--primary)]"
@@ -153,7 +163,7 @@ export function GenerateCardsModal({
             </p>
           )}
         </div>
-      </div>
+      </form>
 
       <div className="flex justify-end gap-2 mt-6">
         <Button variant="outline" onClick={onClose}>

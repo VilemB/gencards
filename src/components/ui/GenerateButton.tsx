@@ -92,9 +92,14 @@ export function GenerateButton({
     <>
       <Button
         variant={variant}
-        onClick={() => setShowModal(true)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowModal(true);
+        }}
         className={className}
         disabled={isGenerating}
+        type="button"
       >
         {isGenerating ? (
           <>
