@@ -5,37 +5,47 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import Deck from "@/models/Deck";
 import Card from "@/models/Card";
+import {
+  getSystemPrompt,
+  isDuplicate,
+  Card as CardType,
+} from "@/lib/prompts/flashcards";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-interface Flashcard {
-  front: string;
-  back: string;
-}
-
-async function getDeckChain(deckId: string | null): Promise<string[]> {
-  if (!deckId) return [];
+async function getDeckChain(
+  deckId: string | null
+): Promise<{ titles: string[]; topics: string[]; fullPath: string }> {
+  if (!deckId) return { titles: [], topics: [], fullPath: "" };
 
   const deck = await Deck.findById(deckId).populate({
     path: "parentDeckId",
-    select: "title parentDeckId",
+    select: "title topic parentDeckId path",
     populate: {
       path: "parentDeckId",
-      select: "title parentDeckId",
+      select: "title topic parentDeckId path",
     },
   });
 
-  if (!deck) return [];
+  if (!deck) return { titles: [], topics: [], fullPath: "" };
 
-  const chain = [];
+  const titles: string[] = [];
+  const topics: string[] = [];
   let currentDeck = deck;
+
   while (currentDeck) {
-    chain.unshift(currentDeck.title);
+    titles.unshift(currentDeck.title);
+    topics.unshift(currentDeck.topic || currentDeck.title);
     currentDeck = currentDeck.parentDeckId;
   }
-  return chain;
+
+  return {
+    titles,
+    topics,
+    fullPath: deck.path || titles.join(" > "),
+  };
 }
 
 async function getExistingCards(
@@ -47,6 +57,72 @@ async function getExistingCards(
   if (!deck) return [];
 
   return deck.cards;
+}
+
+async function validateGeneratedCards(
+  newCards: CardType[],
+  existingCards: CardType[]
+): Promise<{
+  validCards: CardType[];
+  duplicates: Array<{
+    card: CardType;
+    similarTo: CardType;
+    similarity: number;
+  }>;
+}> {
+  console.log("Validating cards:", {
+    newCardsCount: newCards.length,
+    existingCardsCount: existingCards.length,
+  });
+
+  const validCards: CardType[] = [];
+  const duplicates: Array<{
+    card: CardType;
+    similarTo: CardType;
+    similarity: number;
+  }> = [];
+
+  // First validate against existing cards
+  for (const newCard of newCards) {
+    if (existingCards.length > 0) {
+      const {
+        isDuplicate: isDup,
+        similarCard,
+        similarity,
+      } = isDuplicate(newCard, existingCards);
+      if (isDup && similarCard && similarity) {
+        duplicates.push({ card: newCard, similarTo: similarCard, similarity });
+        continue;
+      }
+    }
+
+    // Then check against cards we've already validated
+    if (validCards.length > 0) {
+      const {
+        isDuplicate: isInternalDup,
+        similarCard: internalSimilar,
+        similarity: internalSimilarity,
+      } = isDuplicate(newCard, validCards);
+      if (isInternalDup && internalSimilar && internalSimilarity) {
+        duplicates.push({
+          card: newCard,
+          similarTo: internalSimilar,
+          similarity: internalSimilarity,
+        });
+      } else {
+        validCards.push(newCard);
+      }
+    } else {
+      validCards.push(newCard);
+    }
+  }
+
+  console.log("Validation results:", {
+    validCardsCount: validCards.length,
+    duplicatesCount: duplicates.length,
+  });
+
+  return { validCards, duplicates };
 }
 
 export async function POST(request: Request) {
@@ -79,86 +155,58 @@ export async function POST(request: Request) {
     }
 
     // Get deck chain for context
-    const deckChain = await getDeckChain(deckId);
+    const {
+      titles: deckChainTitles,
+      topics: deckChainTopics,
+      fullPath,
+    } = await getDeckChain(deckId);
     const existingCards = await getExistingCards(deckId);
 
     // Extract context from promptContext
     const { mainTopic, subtopic, instructions, format } = promptContext;
 
-    const systemPrompt = `You are an expert educator specializing in ${mainTopic}. Your task is to create educational flashcards that are DIRECT EXAMPLES of ${subtopic} in ${mainTopic}.
+    // Use the full deck chain for context
+    const systemPrompt = getSystemPrompt({
+      mainTopic: deckChainTopics[0] || mainTopic,
+      subtopic,
+      deckChain: deckChainTitles,
+      deckTopics: deckChainTopics,
+      fullPath,
+      existingCards,
+      format,
+    });
 
-Key Requirements:
-1. Each card must be a DIRECT EXAMPLE, not an explanation or definition
-2. Stay strictly within the context of ${mainTopic}
-3. Never mix content from different contexts
+    // Enhance the user prompt with explicit context requirements
+    const contextPath =
+      deckChainTopics.length > 0
+        ? `${deckChainTopics.join(" > ")} > ${topic}`
+        : topic;
 
-Context-Specific Guidelines:
-- For Languages (e.g., Korean, Spanish):
-  * Front: The actual word/phrase in the target language
-  * Back: Translation + pronunciation (if relevant)
-  * Example for "verbs": Front: "먹다" Back: "to eat (meokda)"
-  * NO grammar explanations or definitions about verbs
+    const userPrompt = `Generate ${count} flashcards for "${topic}" that STRICTLY follow this context path: ${contextPath}.
+Each card MUST be directly related to ${
+      deckChainTitles[deckChainTitles.length - 1]
+    } and its parent categories.
+${instructions}`;
 
-- For Sciences:
-  * Front: Specific example/instance
-  * Back: Explanation/application
-  * Example for "elements": Front: "Fe" Back: "Iron - Used in hemoglobin"
-  * NO general definitions about what elements are
-
-- For Mathematics:
-  * Front: Specific problem/equation
-  * Back: Solution/result
-  * Example for "equations": Front: "2x + 5 = 15" Back: "x = 5"
-  * NO explanations about what equations are
-
-- For History:
-  * Front: Specific event/date
-  * Back: Significance/outcome
-  * Example for "battles": Front: "Battle of Hastings 1066" Back: "Norman Conquest of England"
-  * NO general descriptions about battles
-
-Quality Standards:
-- Each card must be a concrete example
-- No theoretical explanations unless specifically requested
-- Keep responses clear and concise
-- Use appropriate formatting
-- Avoid duplicating existing cards
-- Consider the full context hierarchy
-
-Format your response as valid JSON:
-{
-  "flashcards": [
-    {
-      "front": "actual example",
-      "back": "meaning/translation/result"
-    }
-  ]
-}`;
-
-    const userPrompt = `${instructions}
-
-Context:
-- Main Topic: ${mainTopic}
-- Subtopic: ${subtopic}
-- Format: ${format}
-- Deck Chain: ${deckChain.join(" > ")}
-
-${
-  existingCards.length > 0
-    ? `Existing cards (avoid duplicates):
-${existingCards
-  .map((card) => `- Front: "${card.front}" Back: "${card.back}"`)
-  .join("\n")}`
-    : ""
-}
-
-Create ${count} flashcards that are DIRECT EXAMPLES of ${subtopic} in ${mainTopic}.`;
+    console.log("Generating cards with context:", {
+      deckChain: deckChainTitles,
+      topics: deckChainTopics,
+      fullPath,
+      subtopic: topic,
+      contextPath,
+    });
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: userPrompt,
+        },
       ],
       temperature: 0.7,
     });
@@ -170,7 +218,6 @@ Create ${count} flashcards that are DIRECT EXAMPLES of ${subtopic} in ${mainTopi
 
     let parsedResponse;
     try {
-      // Clean the response text by removing markdown code block syntax
       const cleanedResponse = responseText
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
@@ -188,24 +235,46 @@ Create ${count} flashcards that are DIRECT EXAMPLES of ${subtopic} in ${mainTopi
       throw new Error("Invalid response format from AI model");
     }
 
-    // If createNewDeck is true, create a new deck with these cards
+    // Validate generated cards for duplicates
+    const { validCards, duplicates } = await validateGeneratedCards(
+      parsedResponse.flashcards,
+      existingCards
+    );
+
+    // Only consider it an error if we have duplicates against existing cards
+    // when there are existing cards to check against
+    const tooManyDuplicates =
+      existingCards.length > 0 &&
+      duplicates.length > parsedResponse.flashcards.length / 2;
+
+    if (tooManyDuplicates) {
+      return NextResponse.json(
+        {
+          error: "Too many duplicate cards generated",
+          duplicates,
+          validCards,
+        },
+        { status: 422 }
+      );
+    }
+
+    // If createNewDeck is true, create a new deck with the valid cards
     if (createNewDeck) {
       await connectToDatabase();
 
-      // Create deck
       const deck = await Deck.create({
         title: `${topic} - AI Generated`,
         description: `Automatically generated flashcards about ${topic}`,
         topic: topic.charAt(0).toUpperCase() + topic.slice(1),
         userId: session.user.id,
-        cardCount: parsedResponse.flashcards.length,
+        cardCount: validCards.length,
         isPublic: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
       // Create cards
-      const cards = parsedResponse.flashcards.map((card: Flashcard) => ({
+      const cards = validCards.map((card) => ({
         deckId: deck._id,
         userId: session.user.id,
         front: card.front,
@@ -219,32 +288,36 @@ Create ${count} flashcards that are DIRECT EXAMPLES of ${subtopic} in ${mainTopi
       return NextResponse.json({
         message: "Deck created successfully",
         deckId: deck._id,
-        cards: parsedResponse.flashcards,
+        cards: validCards,
+        duplicatesRemoved: duplicates.length,
       });
     }
 
-    // Otherwise just return the generated cards
+    // Otherwise update existing deck with the valid cards
     if (deckId) {
       await connectToDatabase();
 
-      // Update existing deck with new cards
       const deck = await Deck.findById(deckId);
       if (!deck) {
         throw new Error("Deck not found");
       }
 
-      // Add new cards to the deck
-      const newCards = parsedResponse.flashcards.map((card: Flashcard) => ({
-        front: card.front,
-        back: card.back,
-      }));
-
-      deck.cards.push(...newCards);
+      // Add new valid cards to the deck
+      deck.cards.push(...validCards);
       deck.cardCount = deck.cards.length;
       await deck.save();
+
+      return NextResponse.json({
+        cards: validCards,
+        duplicatesRemoved: duplicates.length,
+        message:
+          duplicates.length > 0
+            ? `${duplicates.length} duplicate cards were filtered out`
+            : undefined,
+      });
     }
 
-    return NextResponse.json({ cards: parsedResponse.flashcards });
+    return NextResponse.json({ cards: validCards });
   } catch (error: unknown) {
     console.error("Error generating flashcards:", error);
     return NextResponse.json(

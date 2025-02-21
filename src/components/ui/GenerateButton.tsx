@@ -64,18 +64,21 @@ export function GenerateButton({
     );
 
     try {
-      // Build hierarchical context from deck chain
-      const hierarchyContext =
+      const rootTopic = deckChain[0] || deckTopic;
+      const contextPath =
         deckChain.length > 1
-          ? `This is specifically about ${topic} in the context of ${deckTopic}, which is part of the ${deckChain
-              .slice(0, -1)
-              .join(" > ")} hierarchy.`
-          : `This is about ${topic} in the context of ${deckTopic}.`;
+          ? `${deckChain.join(" > ")} > ${topic}`
+          : `${deckTopic} > ${topic}`;
 
+      // Build a focused, context-aware prompt
       const promptContext = {
-        mainTopic: deckChain[0] || deckTopic, // Use root topic as main context
+        mainTopic: rootTopic,
         subtopic: topic,
-        instructions: `Generate ${count} flashcards about ${topic}. ${hierarchyContext} Each card should be a direct example of ${topic}, not explanations. For language decks, provide actual ${topic} in that language, not definitions or grammar explanations.`,
+        instructions: `Create ${count} flashcards for ${topic} in the context of ${contextPath}. Each card should be a concrete, practical example - not theory or definitions. ${
+          responseType === "complex"
+            ? "Include relevant details and context where helpful."
+            : "Keep responses focused and concise."
+        }`,
         format: responseType === "simple" ? "basic" : "detailed",
       };
 
@@ -126,7 +129,7 @@ export function GenerateButton({
         onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          await loadDeckChain(); // Load deck chain before showing modal
+          await loadDeckChain();
           setShowModal(true);
         }}
         className={className}
