@@ -239,13 +239,16 @@ const DeleteDropZone = ({ isDragging }: { isDragging: boolean }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
+      className="fixed bottom-8 inset-x-0 flex justify-center z-50"
     >
       <motion.div
         ref={setNodeRef}
         animate={{
           scale: isOver ? 1.1 : 1,
           backgroundColor: isOver ? "rgb(254 226 226)" : "rgb(254 242 242)",
+          boxShadow: isOver
+            ? "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+            : "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
         }}
         transition={{
           type: "spring",
@@ -253,10 +256,9 @@ const DeleteDropZone = ({ isDragging }: { isDragging: boolean }) => {
           damping: 30,
         }}
         className={cn(
-          "p-4 rounded-lg border-2 border-dashed border-red-400 flex items-center gap-2",
+          "px-6 py-4 rounded-xl border-2 border-dashed flex items-center gap-3",
           "transition-all duration-200",
-          "shadow-lg",
-          isOver && "border-red-500"
+          isOver ? "border-red-500" : "border-red-400"
         )}
         role="button"
         aria-label="Delete zone"
@@ -267,14 +269,19 @@ const DeleteDropZone = ({ isDragging }: { isDragging: boolean }) => {
             isOver ? "text-red-600" : "text-red-500"
           )}
         />
-        <span
-          className={cn(
-            "font-medium transition-colors",
-            isOver ? "text-red-700" : "text-red-600"
-          )}
-        >
-          Drop to delete
-        </span>
+        <div>
+          <p
+            className={cn(
+              "font-medium transition-colors",
+              isOver ? "text-red-700" : "text-red-600"
+            )}
+          >
+            Drop to delete
+          </p>
+          <p className="text-sm text-red-500/80">
+            Card will be permanently removed
+          </p>
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -297,7 +304,7 @@ const ParentDeckDropZone = ({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50"
+      className="fixed top-8 inset-x-0 flex justify-center z-50"
     >
       <motion.div
         ref={setNodeRef}
@@ -305,6 +312,9 @@ const ParentDeckDropZone = ({
           scale: isOver ? 1.1 : 1,
           backgroundColor: isOver ? "rgb(226 232 240)" : "rgb(241 245 249)",
           borderColor: isOver ? "var(--primary)" : "rgb(226 232 240)",
+          boxShadow: isOver
+            ? "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+            : "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
         }}
         transition={{
           type: "spring",
@@ -312,9 +322,8 @@ const ParentDeckDropZone = ({
           damping: 30,
         }}
         className={cn(
-          "p-4 rounded-lg border-2 border-dashed flex items-center gap-3",
-          "transition-all duration-200",
-          "shadow-lg"
+          "px-6 py-4 rounded-xl border-2 border-dashed flex items-center gap-3",
+          "transition-all duration-200"
         )}
       >
         <FolderOpen
@@ -332,7 +341,9 @@ const ParentDeckDropZone = ({
           >
             Move to {parentDeck.title}
           </p>
-          <p className="text-sm text-slate-500">{parentDeck.cardCount} cards</p>
+          <p className="text-sm text-slate-500">
+            Card will be moved to parent deck
+          </p>
         </div>
       </motion.div>
     </motion.div>
