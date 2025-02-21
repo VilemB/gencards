@@ -24,6 +24,29 @@ export function GenerateButton({
   const [responseType, setResponseType] = useState<"simple" | "complex">(
     "simple"
   );
+  const [deckChain, setDeckChain] = useState<string[]>([]);
+
+  // Add effect to load deck chain
+  const loadDeckChain = async () => {
+    try {
+      const response = await fetch(`/api/decks/${deckId}`);
+      if (response.ok) {
+        const deck = await response.json();
+        const chain: string[] = [];
+
+        // Build chain from populated parentDeckId
+        let currentDeck = deck;
+        while (currentDeck?.parentDeckId) {
+          chain.unshift(currentDeck.parentDeckId.topic);
+          currentDeck = currentDeck.parentDeckId;
+        }
+        chain.push(deckTopic);
+        setDeckChain(chain);
+      }
+    } catch (error) {
+      console.error("Error loading deck chain:", error);
+    }
+  };
 
   const handleGenerate = async (
     topic: string,
@@ -41,10 +64,18 @@ export function GenerateButton({
     );
 
     try {
+      // Build hierarchical context from deck chain
+      const hierarchyContext =
+        deckChain.length > 1
+          ? `This is specifically about ${topic} in the context of ${deckTopic}, which is part of the ${deckChain
+              .slice(0, -1)
+              .join(" > ")} hierarchy.`
+          : `This is about ${topic} in the context of ${deckTopic}.`;
+
       const promptContext = {
-        mainTopic: deckTopic,
+        mainTopic: deckChain[0] || deckTopic, // Use root topic as main context
         subtopic: topic,
-        instructions: `Generate ${count} flashcards about ${topic}. Each card should be a direct example of ${topic} in the context of ${deckTopic}, not explanations about ${topic}. For language decks, provide actual ${topic} in that language, not definitions or grammar explanations.`,
+        instructions: `Generate ${count} flashcards about ${topic}. ${hierarchyContext} Each card should be a direct example of ${topic}, not explanations. For language decks, provide actual ${topic} in that language, not definitions or grammar explanations.`,
         format: responseType === "simple" ? "basic" : "detailed",
       };
 
@@ -92,9 +123,10 @@ export function GenerateButton({
     <>
       <Button
         variant={variant}
-        onClick={(e) => {
+        onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
+          await loadDeckChain(); // Load deck chain before showing modal
           setShowModal(true);
         }}
         className={className}
@@ -118,7 +150,13 @@ export function GenerateButton({
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title="Generate Cards with AI"
-        description="Let AI help you create high-quality flashcards for your deck."
+        description={
+          deckChain.length > 1
+            ? `Generate cards for ${deckTopic} in the context of ${deckChain
+                .slice(0, -1)
+                .join(" > ")}`
+            : "Let AI help you create high-quality flashcards for your deck."
+        }
         responseType={responseType}
         onResponseTypeChange={setResponseType}
         onGenerate={handleGenerate}
