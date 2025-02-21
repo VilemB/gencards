@@ -24,28 +24,82 @@ export function GenerateButton({
   const [responseType, setResponseType] = useState<"simple" | "complex">(
     "simple"
   );
-  const [deckChain, setDeckChain] = useState<string[]>([]);
+  const [deckChain, setDeckChain] = useState<
+    { title: string; topic: string }[]
+  >([]);
 
-  // Add effect to load deck chain
   const loadDeckChain = async () => {
     try {
       const response = await fetch(`/api/decks/${deckId}`);
       if (response.ok) {
         const deck = await response.json();
-        const chain: string[] = [];
+        const chain: { title: string; topic: string }[] = [];
 
         // Build chain from populated parentDeckId
         let currentDeck = deck;
         while (currentDeck?.parentDeckId) {
-          chain.unshift(currentDeck.parentDeckId.topic);
+          chain.unshift({
+            title: currentDeck.parentDeckId.title,
+            topic:
+              currentDeck.parentDeckId.topic || currentDeck.parentDeckId.title,
+          });
           currentDeck = currentDeck.parentDeckId;
         }
-        chain.push(deckTopic);
+
+        // Add current deck to chain
+        chain.push({
+          title: deck.title,
+          topic: deck.topic || deck.title,
+        });
+
         setDeckChain(chain);
       }
     } catch (error) {
       console.error("Error loading deck chain:", error);
     }
+  };
+
+  // Generate a context-aware description based on the deck chain
+  const getModalDescription = () => {
+    if (deckChain.length === 0) {
+      return "Let AI help you create high-quality flashcards for your deck.";
+    }
+
+    const lastDeck = deckChain[deckChain.length - 1];
+    const parentDeck = deckChain[deckChain.length - 2];
+
+    // Safely access topic with fallback to title
+    const lastTopic = lastDeck?.topic || lastDeck?.title || deckTopic;
+    const parentTopic = parentDeck?.topic || parentDeck?.title;
+
+    // Special handling for known topics
+    const lastTopicLower = lastTopic.toLowerCase();
+    if (lastTopicLower.includes("korean")) {
+      return "Generate Korean vocabulary and phrases with proper romanization, translations, and usage examples.";
+    }
+
+    if (lastTopicLower.includes("language")) {
+      return "Create language learning flashcards with translations, pronunciation guides, and contextual usage.";
+    }
+
+    if (lastTopicLower.includes("math")) {
+      return "Generate mathematics flashcards with clear explanations, formulas, and step-by-step examples.";
+    }
+
+    if (lastTopicLower.includes("science")) {
+      return "Create science flashcards with definitions, explanations, and real-world applications.";
+    }
+
+    if (lastTopicLower.includes("history")) {
+      return "Generate history flashcards with key events, dates, figures, and their significance.";
+    }
+
+    // Context-based descriptions
+    if (parentTopic) {
+      return `Generate flashcards about ${lastTopic} in the context of ${parentTopic}. AI will ensure all content is relevant and properly connected to the parent topic.`;
+    }
+
+    return `Create high-quality flashcards specifically focused on ${lastTopic}. AI will generate accurate and relevant content for your study needs.`;
   };
 
   const handleGenerate = async (
@@ -64,10 +118,10 @@ export function GenerateButton({
     );
 
     try {
-      const rootTopic = deckChain[0] || deckTopic;
+      const rootTopic = deckChain[0]?.topic || deckTopic;
       const contextPath =
         deckChain.length > 1
-          ? `${deckChain.join(" > ")} > ${topic}`
+          ? `${deckChain.map((d) => d.topic).join(" > ")} > ${topic}`
           : `${deckTopic} > ${topic}`;
 
       // Build a focused, context-aware prompt
@@ -153,18 +207,13 @@ export function GenerateButton({
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title="Generate Cards with AI"
-        description={
-          deckChain.length > 1
-            ? `Generate cards for ${deckTopic} in the context of ${deckChain
-                .slice(0, -1)
-                .join(" > ")}`
-            : "Let AI help you create high-quality flashcards for your deck."
-        }
+        description={getModalDescription()}
         responseType={responseType}
         onResponseTypeChange={setResponseType}
         onGenerate={handleGenerate}
         isLoading={isGenerating}
         deckTitle={deckTopic}
+        deckChain={deckChain}
       />
     </>
   );
