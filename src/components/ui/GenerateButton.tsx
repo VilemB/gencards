@@ -1,8 +1,15 @@
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, FileText, List, ChevronDown } from "lucide-react";
 import { Button } from "./button";
 import { GenerateCardsModal } from "./GenerateCardsModal";
+import { ScanDocumentModal } from "./ScanDocumentModal";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./dropdown-menu";
 
 interface Props {
   deckId: string;
@@ -20,7 +27,9 @@ export function GenerateButton({
   className,
 }: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [scanMode, setScanMode] = useState<"extract" | "generate" | null>(null);
   const [responseType, setResponseType] = useState<"simple" | "complex">(
     "simple"
   );
@@ -164,7 +173,7 @@ export function GenerateButton({
 
       toast.success(`Generated ${data.cards.length} new flashcards!`);
       onSuccess?.();
-      setShowModal(false);
+      setShowGenerateModal(false);
     } catch (error) {
       console.error("Error generating flashcards:", error);
       toast.dismiss(loadingToast);
@@ -178,34 +187,62 @@ export function GenerateButton({
 
   return (
     <>
-      <Button
-        variant={variant}
-        onClick={async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          await loadDeckChain();
-          setShowModal(true);
-        }}
-        className={className}
-        disabled={isGenerating}
-        type="button"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Generating...
-          </>
-        ) : (
-          <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant={variant}
+            className={className}
+            disabled={isGenerating}
+            type="button"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate Cards
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem
+            onClick={async () => {
+              await loadDeckChain();
+              setShowGenerateModal(true);
+            }}
+          >
             <Sparkles className="h-4 w-4 mr-2" />
-            AI Generate
-          </>
-        )}
-      </Button>
+            <span>AI Generate</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setScanMode("extract");
+              setShowScanModal(true);
+            }}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            <span>Scan Document</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setScanMode("generate");
+              setShowScanModal(true);
+            }}
+          >
+            <List className="h-4 w-4 mr-2" />
+            <span>Extract Terms</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <GenerateCardsModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
         title="Generate Cards with AI"
         description={getModalDescription()}
         responseType={responseType}
@@ -214,6 +251,18 @@ export function GenerateButton({
         isLoading={isGenerating}
         deckTitle={deckTopic}
         deckChain={deckChain}
+      />
+
+      <ScanDocumentModal
+        isOpen={showScanModal}
+        onClose={() => {
+          setShowScanModal(false);
+          setScanMode(null);
+        }}
+        mode={scanMode}
+        deckId={deckId}
+        deckTopic={deckTopic}
+        onSuccess={onSuccess}
       />
     </>
   );
