@@ -25,6 +25,19 @@ export interface CardPreviewModalProps {
   };
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 export function CardPreviewModal({
   isOpen,
   onClose,
@@ -39,6 +52,7 @@ export function CardPreviewModal({
   shortcuts,
 }: CardPreviewModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Handle fullscreen
   const toggleFullscreen = () => {
@@ -185,7 +199,9 @@ export function CardPreviewModal({
                           transition={{ delay: 0.2 }}
                           className="text-center mt-6 text-sm text-[var(--text-secondary)]"
                         >
-                          Press {shortcuts.flip} to flip
+                          {isMobile
+                            ? "Click to flip"
+                            : `Press ${shortcuts.flip} to flip`}
                         </motion.div>
                       )}
                     </div>
