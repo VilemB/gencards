@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { auth } from "@clerk/nextjs";
-import { Deck } from "@/lib/models/Deck";
-import { dbConnect } from "@/lib/db";
+import { auth } from "@clerk/nextjs/server";
+import Deck from "@/models/Deck";
+import { connectToDatabase } from "@/lib/mongodb";
 
 const openai = new OpenAI();
 
 export async function POST(req: Request) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await dbConnect();
+    await connectToDatabase();
 
     const formData = await req.formData();
     const image = formData.get("image") as File;
@@ -83,7 +83,12 @@ export async function POST(req: Request) {
     try {
       extractedData = JSON.parse(content);
     } catch (error) {
-      console.error("Failed to parse OpenAI response:", content);
+      console.error(
+        "Failed to parse OpenAI response:",
+        content,
+        "error:",
+        error
+      );
       throw new Error("Failed to parse extracted content");
     }
 
