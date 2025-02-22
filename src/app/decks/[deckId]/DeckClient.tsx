@@ -151,7 +151,7 @@ function CardPreview({
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Eye className="h-4 w-4" />
-          <span>Click to preview (Space to flip)</span>
+          <span>Click to preview</span>
         </div>
       </div>
       <div
