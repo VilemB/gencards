@@ -415,8 +415,16 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isSaving} className="w-full">
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-1/2"
+              onClick={() => router.back()}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSaving} className="w-1/2">
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -430,6 +438,10 @@ export default function SettingsPage() {
 
           {/* Account Actions */}
           <hr className="border-t border-[var(--neutral-200)] my-8" />
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+            Account Actions
+          </h2>
+
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               type="button"
