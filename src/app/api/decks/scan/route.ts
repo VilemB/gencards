@@ -110,16 +110,40 @@ export async function POST(req: Request) {
     // General-purpose enhanced prompts
     const systemPrompt =
       mode === "extract"
-        ? `Extract key terms and their detailed explanations from this document about ${deckTopic}. For each term:
-- Provide clear, complete explanations
-- Include relevant context and examples
-- Maintain accuracy and depth
-Format: JSON array with front/back properties. Ensure each entry is complete and well-explained.`
-        : `Extract important terms from this document about ${deckTopic} that would benefit from detailed explanation. Focus on:
-- Key concepts and terminology
-- Important examples and instances
-- Significant elements and components
-Format: JSON array of strings. Extract terms that are central to understanding ${deckTopic}.`;
+        ? `You are analyzing a document about ${deckTopic}. Your task:
+
+1. First, understand the main themes and concepts being discussed in the document
+2. Then, identify key terms that are:
+   - Directly related to ${deckTopic}
+   - Actually explained or discussed in the document
+   - Important for understanding the material
+3. For each term:
+   - Use the actual explanation from the document
+   - Only include terms where you can find a clear explanation
+   - Ensure the explanation matches the context of ${deckTopic}
+
+Format: JSON array with front/back properties.
+Do NOT include terms that:
+- Are just mentioned without explanation
+- Are not relevant to ${deckTopic}
+- Have unclear or ambiguous explanations`
+        : `You are analyzing a document about ${deckTopic}. Your task:
+
+1. First, understand what aspects of ${deckTopic} are being discussed
+2. Then, identify key terms that:
+   - Are central to understanding ${deckTopic}
+   - Are mentioned in a meaningful context
+   - Would benefit from detailed explanation
+3. Only extract terms that:
+   - Are clearly related to ${deckTopic}
+   - Represent important concepts or elements
+   - Are part of the main discussion
+
+Format: JSON array of strings.
+Do NOT include:
+- Incidental mentions
+- General vocabulary
+- Terms from unrelated examples`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -135,8 +159,8 @@ Format: JSON array of strings. Extract terms that are central to understanding $
               type: "text",
               text:
                 mode === "extract"
-                  ? `Extract key terms and their complete explanations from this ${deckTopic} document. Focus on accuracy and clarity.`
-                  : `Identify important terms from this ${deckTopic} document that need detailed explanation.`,
+                  ? `First understand what this document is explaining about ${deckTopic}, then extract only the relevant terms and their explanations. Focus on what's actually being taught or explained.`
+                  : `First understand what aspects of ${deckTopic} this document covers, then identify the key terms that are central to those specific aspects.`,
             },
             {
               type: "image_url",
