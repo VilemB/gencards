@@ -14,6 +14,38 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+async function generateFlashcards(terms: string[], topic: string) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert at creating detailed flashcards about ${topic}. For each term, create a comprehensive yet concise explanation that would be suitable for a flashcard. Format your response as a JSON array of objects with 'front' and 'back' properties.`,
+      },
+      {
+        role: "user",
+        content: `Create flashcards for the following terms related to ${topic}:\n${terms.join(
+          "\n"
+        )}`,
+      },
+    ],
+    temperature: 0.7,
+  });
+
+  const content = response.choices[0].message?.content;
+  if (!content) {
+    throw new Error("No content in response");
+  }
+
+  // Clean and parse the response
+  const cleanedContent = content
+    .replace(/```json\n?/g, "")
+    .replace(/```\n?/g, "")
+    .trim();
+
+  return JSON.parse(cleanedContent);
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -57,7 +89,7 @@ export async function POST(req: Request) {
     // Prepare the prompt based on mode
     const systemPrompt =
       mode === "extract"
-        ? `You are an expert at extracting terms and their definitions from educational documents about ${deckTopic}. Extract all terms and their definitions, maintaining the exact relationship between them as shown in the document. Format your response as a JSON array of objects with 'term' and 'definition' properties. Ensure all content is relevant to ${deckTopic}.`
+        ? `You are an expert at extracting terms and their definitions from educational documents about ${deckTopic}. Extract all terms and their definitions, maintaining the exact relationship between them as shown in the document. Format your response as a JSON array of objects with 'front' and 'definition' properties. Ensure all content is relevant to ${deckTopic}.`
         : `You are an expert at identifying important terms from educational documents about ${deckTopic}. Extract all relevant terms that would benefit from having flashcards created for them. Format your response as a JSON array of strings containing just the terms. Only extract terms relevant to ${deckTopic}.`;
 
     console.log("Calling OpenAI with prompt:", systemPrompt);
@@ -109,6 +141,7 @@ export async function POST(req: Request) {
           .trim();
 
         extractedData = JSON.parse(cleanedContent);
+
         // If mode is extract, validate the format
         if (mode === "extract") {
           if (
@@ -117,18 +150,55 @@ export async function POST(req: Request) {
           ) {
             throw new Error("Invalid response format");
           }
+
+          // Convert extracted term-definition pairs to cards
+          const cards = extractedData.map((item) => ({
+            front: item.term,
+            back: item.definition,
+          }));
+
+          // Update the deck with new cards
+          await Deck.findByIdAndUpdate(
+            deckId,
+            {
+              $push: { cards: { $each: cards } },
+              $inc: { cardCount: cards.length },
+            },
+            { new: true }
+          );
+
+          return NextResponse.json({
+            data: cards,
+            message: `Added ${cards.length} cards to your deck`,
+          });
         } else {
           // For generate mode, ensure we have an array of strings
           if (!Array.isArray(extractedData)) {
             throw new Error("Invalid response format");
           }
+
+          // Generate detailed flashcards for the extracted terms
+          const cards = await generateFlashcards(extractedData, deckTopic);
+
+          // Update the deck with new cards
+          await Deck.findByIdAndUpdate(
+            deckId,
+            {
+              $push: { cards: { $each: cards } },
+              $inc: { cardCount: cards.length },
+            },
+            { new: true }
+          );
+
+          return NextResponse.json({
+            data: cards,
+            message: `Generated ${cards.length} cards for your deck`,
+          });
         }
       } catch (error) {
         console.error("Failed to parse OpenAI response:", content, error);
         throw new Error("Failed to parse extracted content");
       }
-
-      return NextResponse.json({ data: extractedData });
     } catch (error) {
       console.error("OpenAI API error:", error);
       throw new Error(
