@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Deck from "@/models/Deck";
 import { connectToDatabase } from "@/lib/mongodb";
+import sharp from "sharp";
 
 // Initialize OpenAI with API key check
 if (!process.env.OPENAI_API_KEY) {
@@ -14,36 +15,60 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Maximum dimensions for image processing
+const MAX_IMAGE_SIZE = 1024;
+
+async function compressImage(buffer: Buffer): Promise<Buffer> {
+  try {
+    const image = sharp(buffer);
+    const metadata = await image.metadata();
+
+    // Resize if larger than MAX_IMAGE_SIZE while maintaining aspect ratio
+    if (metadata.width && metadata.height) {
+      const maxDimension = Math.max(metadata.width, metadata.height);
+      if (maxDimension > MAX_IMAGE_SIZE) {
+        const resizeFactor = MAX_IMAGE_SIZE / maxDimension;
+        const newWidth = Math.round(metadata.width * resizeFactor);
+        const newHeight = Math.round(metadata.height * resizeFactor);
+        image.resize(newWidth, newHeight);
+      }
+    }
+
+    // Compress image
+    return await image.jpeg({ quality: 80, progressive: true }).toBuffer();
+  } catch (error) {
+    console.error("Image compression failed:", error);
+    return buffer; // Return original buffer if compression fails
+  }
+}
+
 async function generateFlashcards(terms: string[], topic: string) {
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
-        content: `You are an expert at creating detailed flashcards about ${topic}. For each term, create a comprehensive yet concise explanation that would be suitable for a flashcard. Format your response as a JSON array of objects with 'front' and 'back' properties.`,
+        content: `Create high-quality, detailed flashcards about ${topic}. For each term:
+1. Provide a clear, accurate definition or explanation
+2. Include relevant context and examples where appropriate
+3. Focus on key concepts and their significance
+Format: JSON array with front/back properties. Ensure each card is informative and academically sound.`,
       },
       {
         role: "user",
-        content: `Create flashcards for the following terms related to ${topic}:\n${terms.join(
+        content: `Create detailed flashcards for these terms about ${topic}:\n${terms.join(
           "\n"
-        )}`,
+        )}\nEnsure information is accurate and well-explained.`,
       },
     ],
-    temperature: 0.7,
+    temperature: 0.3,
+    max_tokens: 4000,
   });
 
   const content = response.choices[0].message?.content;
-  if (!content) {
-    throw new Error("No content in response");
-  }
+  if (!content) throw new Error("No content in response");
 
-  // Clean and parse the response
-  const cleanedContent = content
-    .replace(/```json\n?/g, "")
-    .replace(/```\n?/g, "")
-    .trim();
-
-  return JSON.parse(cleanedContent);
+  return JSON.parse(content.replace(/```json\n?|```\n?/g, "").trim());
 }
 
 export async function POST(req: Request) {
@@ -61,163 +86,145 @@ export async function POST(req: Request) {
     const deckId = formData.get("deckId") as string;
     const deckTopic = formData.get("deckTopic") as string;
 
-    console.log("Processing request:", { mode, deckId, deckTopic });
-
-    if (!image || !mode || !deckId) {
+    if (!image || !mode || !deckId || !deckTopic) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Convert image to base64
+    // Process and compress image
     const bytes = await image.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64Image = buffer.toString("base64");
+    const originalBuffer = Buffer.from(bytes);
+    const compressedBuffer = await compressImage(originalBuffer);
+    const base64Image = compressedBuffer.toString("base64");
 
-    // Get deck context
-    const deck = await Deck.findById(deckId).populate("parentDeckId");
-    if (!deck) {
+    // Get deck and verify ownership
+    const deck = await Deck.findById(deckId);
+    if (!deck)
       return NextResponse.json({ error: "Deck not found" }, { status: 404 });
-    }
-
-    // Verify deck ownership
     if (deck.userId !== session.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Prepare the prompt based on mode
+    // General-purpose enhanced prompts
     const systemPrompt =
       mode === "extract"
-        ? `You are an expert at extracting terms and their definitions from educational documents about ${deckTopic}. Extract all terms and their definitions, maintaining the exact relationship between them as shown in the document. Format your response as a JSON array of objects with 'front' and 'back' properties. Ensure all content is relevant to ${deckTopic}.`
-        : `You are an expert at identifying important terms from educational documents about ${deckTopic}. Extract all relevant terms that would benefit from having flashcards created for them. Format your response as a JSON array of strings containing just the terms. Only extract terms relevant to ${deckTopic}.`;
+        ? `Extract key terms and their detailed explanations from this document about ${deckTopic}. For each term:
+- Provide clear, complete explanations
+- Include relevant context and examples
+- Maintain accuracy and depth
+Format: JSON array with front/back properties. Ensure each entry is complete and well-explained.`
+        : `Extract important terms from this document about ${deckTopic} that would benefit from detailed explanation. Focus on:
+- Key concepts and terminology
+- Important examples and instances
+- Significant elements and components
+Format: JSON array of strings. Extract terms that are central to understanding ${deckTopic}.`;
 
-    console.log("Calling OpenAI with prompt:", systemPrompt);
-
-    try {
-      // Call OpenAI Vision API
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text:
-                  mode === "extract"
-                    ? `Extract all terms and their definitions from this document about ${deckTopic}. Format each item with 'front' for the term and 'back' for the definition.`
-                    : `Extract all important terms from this document that would benefit from having flashcards created for them about ${deckTopic}.`,
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                mode === "extract"
+                  ? `Extract key terms and their complete explanations from this ${deckTopic} document. Focus on accuracy and clarity.`
+                  : `Identify important terms from this ${deckTopic} document that need detailed explanation.`,
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`,
               },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: 4096,
-      });
+            },
+          ],
+        },
+      ],
+      max_tokens: 4000,
+      temperature: 0.3,
+    });
 
-      const content = response.choices[0].message.content;
-      if (!content) {
-        throw new Error("No content in response");
+    const content = response.choices[0].message?.content;
+    if (!content) throw new Error("No content in response");
+
+    const extractedData = JSON.parse(
+      content.replace(/```json\n?|```\n?/g, "").trim()
+    );
+
+    if (mode === "extract") {
+      if (!Array.isArray(extractedData)) {
+        throw new Error("Invalid response format - not an array");
       }
 
-      console.log("OpenAI response:", content);
+      const cards = extractedData
+        .filter((item) => {
+          const isValid =
+            item.front &&
+            (item.back || item.definition) &&
+            typeof item.front === "string" &&
+            typeof (item.back || item.definition) === "string";
 
-      let extractedData;
-      try {
-        // Clean the content by removing markdown code block syntax
-        const cleanedContent = content
-          .replace(/```json\n?/g, "")
-          .replace(/```\n?/g, "")
-          .trim();
-
-        extractedData = JSON.parse(cleanedContent);
-
-        // If mode is extract, validate the format
-        if (mode === "extract") {
-          if (!Array.isArray(extractedData)) {
-            throw new Error("Invalid response format - not an array");
+          if (isValid) {
+            const back = item.back || item.definition;
+            return (
+              back.length > 20 &&
+              !back.includes("undefined") &&
+              !back.includes("unknown") &&
+              back.toLowerCase() !== item.front.toLowerCase()
+            );
           }
+          return false;
+        })
+        .map((item) => ({
+          front: item.front.trim(),
+          back: (item.back || item.definition).trim(),
+        }));
 
-          // Filter out invalid items and convert to cards
-          const cards = extractedData
-            .filter((item) => {
-              // Keep only items that have both front and back/definition
-              return (
-                item.front &&
-                (item.back || item.definition) &&
-                typeof item.front === "string" &&
-                typeof (item.back || item.definition) === "string"
-              );
-            })
-            .map((item) => ({
-              front: item.front,
-              back: item.back || item.definition || "",
-            }));
-
-          if (cards.length === 0) {
-            throw new Error("No valid cards could be extracted");
-          }
-
-          // Update the deck with new cards
-          await Deck.findByIdAndUpdate(
-            deckId,
-            {
-              $push: { cards: { $each: cards } },
-              $inc: { cardCount: cards.length },
-            },
-            { new: true }
-          );
-
-          return NextResponse.json({
-            data: cards,
-            message: `Added ${cards.length} cards to your deck`,
-            skipped: extractedData.length - cards.length,
-          });
-        } else {
-          // For generate mode, ensure we have an array of strings
-          if (!Array.isArray(extractedData)) {
-            throw new Error("Invalid response format");
-          }
-
-          // Generate detailed flashcards for the extracted terms
-          const cards = await generateFlashcards(extractedData, deckTopic);
-
-          // Update the deck with new cards
-          await Deck.findByIdAndUpdate(
-            deckId,
-            {
-              $push: { cards: { $each: cards } },
-              $inc: { cardCount: cards.length },
-            },
-            { new: true }
-          );
-
-          return NextResponse.json({
-            data: cards,
-            message: `Generated ${cards.length} cards for your deck`,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to parse OpenAI response:", content, error);
-        throw new Error("Failed to parse extracted content");
+      if (cards.length === 0) {
+        throw new Error("No valid cards could be extracted");
       }
-    } catch (error) {
-      console.error("OpenAI API error:", error);
-      throw new Error(
-        `OpenAI API error: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+
+      await Deck.findByIdAndUpdate(
+        deckId,
+        {
+          $push: { cards: { $each: cards } },
+          $inc: { cardCount: cards.length },
+        },
+        { new: true }
       );
+
+      return NextResponse.json({
+        data: cards,
+        message: `Added ${cards.length} cards to your deck`,
+        skipped: extractedData.length - cards.length,
+      });
+    } else {
+      if (!Array.isArray(extractedData)) {
+        throw new Error("Invalid response format");
+      }
+
+      const cards = await generateFlashcards(extractedData, deckTopic);
+
+      await Deck.findByIdAndUpdate(
+        deckId,
+        {
+          $push: { cards: { $each: cards } },
+          $inc: { cardCount: cards.length },
+        },
+        { new: true }
+      );
+
+      return NextResponse.json({
+        data: cards,
+        message: `Generated ${cards.length} cards for your deck`,
+      });
     }
   } catch (error) {
     console.error("Error processing document:", error);
