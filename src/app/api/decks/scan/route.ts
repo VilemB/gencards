@@ -16,7 +16,7 @@ const openai = new OpenAI({
 
 async function generateFlashcards(terms: string[], topic: string) {
   const response = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     // Prepare the prompt based on mode
     const systemPrompt =
       mode === "extract"
-        ? `You are an expert at extracting terms and their definitions from educational documents about ${deckTopic}. Extract all terms and their definitions, maintaining the exact relationship between them as shown in the document. Format your response as a JSON array of objects with 'front' and 'definition' properties. Ensure all content is relevant to ${deckTopic}.`
+        ? `You are an expert at extracting terms and their definitions from educational documents about ${deckTopic}. Extract all terms and their definitions, maintaining the exact relationship between them as shown in the document. Format your response as a JSON array of objects with 'front' and 'back' properties. Ensure all content is relevant to ${deckTopic}.`
         : `You are an expert at identifying important terms from educational documents about ${deckTopic}. Extract all relevant terms that would benefit from having flashcards created for them. Format your response as a JSON array of strings containing just the terms. Only extract terms relevant to ${deckTopic}.`;
 
     console.log("Calling OpenAI with prompt:", systemPrompt);
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
                 type: "text",
                 text:
                   mode === "extract"
-                    ? `Extract all terms and their definitions from this document about ${deckTopic}. Ensure you maintain the exact relationships between terms and definitions as shown.`
+                    ? `Extract all terms and their definitions from this document about ${deckTopic}. Format each item with 'front' for the term and 'back' for the definition.`
                     : `Extract all important terms from this document that would benefit from having flashcards created for them about ${deckTopic}.`,
               },
               {
@@ -144,18 +144,29 @@ export async function POST(req: Request) {
 
         // If mode is extract, validate the format
         if (mode === "extract") {
-          if (
-            !Array.isArray(extractedData) ||
-            !extractedData.every((item) => item.term && item.definition)
-          ) {
-            throw new Error("Invalid response format");
+          if (!Array.isArray(extractedData)) {
+            throw new Error("Invalid response format - not an array");
           }
 
-          // Convert extracted term-definition pairs to cards
-          const cards = extractedData.map((item) => ({
-            front: item.term,
-            back: item.definition,
-          }));
+          // Filter out invalid items and convert to cards
+          const cards = extractedData
+            .filter((item) => {
+              // Keep only items that have both front and back/definition
+              return (
+                item.front &&
+                (item.back || item.definition) &&
+                typeof item.front === "string" &&
+                typeof (item.back || item.definition) === "string"
+              );
+            })
+            .map((item) => ({
+              front: item.front,
+              back: item.back || item.definition || "",
+            }));
+
+          if (cards.length === 0) {
+            throw new Error("No valid cards could be extracted");
+          }
 
           // Update the deck with new cards
           await Deck.findByIdAndUpdate(
@@ -170,6 +181,7 @@ export async function POST(req: Request) {
           return NextResponse.json({
             data: cards,
             message: `Added ${cards.length} cards to your deck`,
+            skipped: extractedData.length - cards.length,
           });
         } else {
           // For generate mode, ensure we have an array of strings
