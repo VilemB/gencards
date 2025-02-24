@@ -140,7 +140,7 @@ export function ScanDocumentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {mode === "extract" ? (
@@ -262,13 +262,27 @@ export function ScanDocumentModal({
               <input {...getInputProps()} />
 
               {previewImage ? (
-                <div className="relative w-full aspect-[3/2]">
+                <div className="relative w-full aspect-[3/2] group">
                   <Image
                     src={previewImage}
                     alt="Document preview"
                     fill
                     className="object-contain"
                   />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewImage(null);
+                        setUploadedFile(null);
+                      }}
+                    >
+                      Remove Image
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
