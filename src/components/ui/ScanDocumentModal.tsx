@@ -177,35 +177,21 @@ export function ScanDocumentModal({
                   onChange={(e) => setInputLanguage(e.target.value)}
                   className={cn(
                     "w-full rounded-md border px-3 py-2 text-sm",
-                    "bg-background text-foreground",
+                    "bg-background text-black",
                     "focus:outline-none focus:ring-2 focus:ring-primary",
-                    "disabled:cursor-not-allowed disabled:opacity-50",
-                    "[&_optgroup]:bg-background [&_optgroup]:text-foreground",
-                    "[&_option]:bg-background [&_option]:text-foreground"
+                    "disabled:cursor-not-allowed disabled:opacity-50"
                   )}
                 >
-                  <optgroup
-                    label="Common Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Common Languages">
                     {renderLanguageOptions(LANGUAGES.common)}
                   </optgroup>
-                  <optgroup
-                    label="Slavic Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Slavic Languages">
                     {renderLanguageOptions(LANGUAGES.slavic)}
                   </optgroup>
-                  <optgroup
-                    label="Asian Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Asian Languages">
                     {renderLanguageOptions(LANGUAGES.asian)}
                   </optgroup>
-                  <optgroup
-                    label="Other Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Other Languages">
                     {renderLanguageOptions(LANGUAGES.other)}
                   </optgroup>
                 </select>
@@ -219,35 +205,21 @@ export function ScanDocumentModal({
                   onChange={(e) => setOutputLanguage(e.target.value)}
                   className={cn(
                     "w-full rounded-md border px-3 py-2 text-sm",
-                    "bg-background text-foreground",
+                    "bg-background text-black",
                     "focus:outline-none focus:ring-2 focus:ring-primary",
-                    "disabled:cursor-not-allowed disabled:opacity-50",
-                    "[&_optgroup]:bg-background [&_optgroup]:text-foreground",
-                    "[&_option]:bg-background [&_option]:text-foreground"
+                    "disabled:cursor-not-allowed disabled:opacity-50"
                   )}
                 >
-                  <optgroup
-                    label="Common Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Common Languages">
                     {renderLanguageOptions(LANGUAGES.common)}
                   </optgroup>
-                  <optgroup
-                    label="Slavic Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Slavic Languages">
                     {renderLanguageOptions(LANGUAGES.slavic)}
                   </optgroup>
-                  <optgroup
-                    label="Asian Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Asian Languages">
                     {renderLanguageOptions(LANGUAGES.asian)}
                   </optgroup>
-                  <optgroup
-                    label="Other Languages"
-                    className="bg-background text-foreground"
-                  >
+                  <optgroup label="Other Languages">
                     {renderLanguageOptions(LANGUAGES.other)}
                   </optgroup>
                 </select>
