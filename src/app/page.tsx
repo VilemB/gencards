@@ -51,6 +51,11 @@ export default function Home() {
                   and study materials, making learning more efficient and
                   effective.
                 </p>
+                <div className="mt-2">
+                  <span className="inline-flex items-center rounded-full bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-400 ring-1 ring-inset ring-purple-500/20">
+                    Beta
+                  </span>
+                </div>
                 <div className="mt-10 flex items-center gap-x-6">
                   <Link href="/auth/signup" className="btn-primary">
                     Get started
