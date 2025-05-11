@@ -153,7 +153,7 @@ export default function CreateCardsClient({
   useHotkeys("ctrl+n", handleAddCard, [handleAddCard]);
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a]">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <div className="container mx-auto p-6 max-w-4xl">
         <DeckBreadcrumb
           deckId={deckId}
@@ -162,7 +162,9 @@ export default function CreateCardsClient({
         />
 
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-white">{deckTitle}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+            {deckTitle}
+          </h1>
           <div className="flex gap-3">
             <Button
               variant="outline"
@@ -191,12 +193,12 @@ export default function CreateCardsClient({
                 key={index}
                 className={`p-6 ${
                   previewMode
-                    ? "bg-black/40 hover:bg-black/50"
-                    : "bg-black/20 hover:bg-black/30"
-                } rounded-lg border border-white/10 transition-colors`}
+                    ? "bg-[var(--neutral-800)] hover:bg-[var(--neutral-700)]"
+                    : "bg-[var(--neutral-100)] hover:bg-[var(--neutral-200)] dark:bg-[var(--neutral-800)] dark:hover:bg-[var(--neutral-700)]"
+                } rounded-lg border border-[var(--neutral-300)] dark:border-[var(--neutral-700)] transition-colors`}
               >
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-white">
+                  <h3 className="text-lg font-medium text-[var(--text-primary)]">
                     Card {index + 1}
                   </h3>
                   {cards.length > 1 && !previewMode && (
@@ -205,7 +207,7 @@ export default function CreateCardsClient({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveCard(index)}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 dark:hover:bg-red-400/10"
                     >
                       Remove
                     </Button>
@@ -214,11 +216,11 @@ export default function CreateCardsClient({
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                       Front
                     </label>
                     {previewMode ? (
-                      <div className="min-h-[150px] p-4 bg-black/20 rounded-lg text-white whitespace-pre-wrap">
+                      <div className="min-h-[150px] p-4 bg-[var(--neutral-200)] dark:bg-[var(--neutral-700)] rounded-lg text-[var(--text-primary)] whitespace-pre-wrap">
                         {card.front || "No content"}
                       </div>
                     ) : (
@@ -228,16 +230,16 @@ export default function CreateCardsClient({
                           handleCardChange(index, "front", e.target.value)
                         }
                         placeholder="Enter the front content of the card"
-                        className="min-h-[150px] bg-black/20 border-white/10 text-white placeholder:text-white/30"
+                        className="min-h-[150px] bg-[var(--neutral-50)] dark:bg-[var(--neutral-800)] border-[var(--neutral-300)] dark:border-[var(--neutral-700)] text-[var(--text-primary)] placeholder:text-[var(--neutral-400)] dark:placeholder:text-[var(--neutral-500)]"
                       />
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                       Back
                     </label>
                     {previewMode ? (
-                      <div className="min-h-[150px] p-4 bg-black/20 rounded-lg text-white whitespace-pre-wrap">
+                      <div className="min-h-[150px] p-4 bg-[var(--neutral-200)] dark:bg-[var(--neutral-700)] rounded-lg text-[var(--text-primary)] whitespace-pre-wrap">
                         {card.back || "No content"}
                       </div>
                     ) : (
@@ -247,7 +249,7 @@ export default function CreateCardsClient({
                           handleCardChange(index, "back", e.target.value)
                         }
                         placeholder="Enter the back content of the card"
-                        className="min-h-[150px] bg-black/20 border-white/10 text-white placeholder:text-white/30"
+                        className="min-h-[150px] bg-[var(--neutral-50)] dark:bg-[var(--neutral-800)] border-[var(--neutral-300)] dark:border-[var(--neutral-700)] text-[var(--text-primary)] placeholder:text-[var(--neutral-400)] dark:placeholder:text-[var(--neutral-500)]"
                       />
                     )}
                   </div>
@@ -272,7 +274,7 @@ export default function CreateCardsClient({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 ml-auto"
+              className="flex items-center gap-2 ml-auto"
             >
               {isSubmitting ? (
                 <>
