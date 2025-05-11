@@ -192,7 +192,7 @@ export function GenerateButton({
           <Button
             variant={variant}
             className={className}
-            disabled={isGenerating}
+            disabled={isGenerating || true}
             type="button"
           >
             {isGenerating ? (

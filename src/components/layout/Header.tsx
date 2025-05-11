@@ -17,6 +17,7 @@ import {
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/Modal";
+import Image from "next/image";
 
 // Public navigation items
 const publicNavigation = [
@@ -56,9 +57,11 @@ export default function Header() {
                       href={session ? "/dashboard" : "/"}
                       className="block py-2"
                     >
-                      <img
+                      <Image
                         src="/logo-text.png"
                         alt="GenCards"
+                        width={100}
+                        height={28}
                         className="h-7 w-auto"
                       />
                     </Link>
@@ -168,10 +171,10 @@ export default function Header() {
               ) : (
                 <div className="border-t border-[var(--neutral-200)] px-4 py-4">
                   <div className="flex flex-col gap-2">
-                    <Button asChild>
+                    <Button asChild disabled>
                       <Link href="/auth/signin">Sign in</Link>
                     </Button>
-                    <Button variant="secondary" asChild>
+                    <Button variant="secondary" asChild disabled>
                       <Link href="/auth/signup">Sign up</Link>
                     </Button>
                   </div>

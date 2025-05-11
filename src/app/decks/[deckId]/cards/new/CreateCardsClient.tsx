@@ -168,6 +168,7 @@ export default function CreateCardsClient({
               variant="outline"
               onClick={() => setShowAIModal(true)}
               className="flex items-center gap-2"
+              disabled
             >
               <Sparkles className="w-4 h-4" />
               Generate with AI
