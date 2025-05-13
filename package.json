@@ -28,6 +28,7 @@
     "@tiptap/starter-kit": "^2.2.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/react-dropzone": "^5.1.0",
+    "@vercel/analytics": "^1.5.0",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
