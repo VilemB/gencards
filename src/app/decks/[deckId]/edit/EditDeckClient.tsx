@@ -208,7 +208,7 @@ export default function EditDeckClient({ deckId }: Props) {
   };
 
   const handleAddCard = () => {
-    setCards([...cards, { id: `new-${cards.length}`, front: "", back: "" }]);
+    setCards([{ id: `new-${Date.now()}`, front: "", back: "" }, ...cards]);
   };
 
   const handleRemoveCard = (index: number) => {
