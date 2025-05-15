@@ -652,30 +652,53 @@ export default function EditDeckClient({ deckId }: Props) {
                         "bg-[var(--neutral-100)] rounded-lg p-4"
                     )}
                   >
-                    {cards.map((card, index) => (
-                      <Draggable
-                        key={card.id}
-                        draggableId={card.id}
-                        index={index}
-                      >
-                        {(provided, snapshot) => (
-                          <CardEditor
-                            id={card.id}
-                            front={card.front}
-                            back={card.back}
-                            index={index}
-                            isDragging={snapshot.isDragging}
-                            dragHandleProps={
-                              provided.dragHandleProps || undefined
-                            }
-                            onRemove={handleRemoveCard}
-                            onChange={handleCardChange}
-                            {...provided.draggableProps}
-                            ref={provided.innerRef}
-                          />
-                        )}
-                      </Draggable>
-                    ))}
+                    <AnimatePresence initial={false}>
+                      {cards.map((card, index) => (
+                        <Draggable
+                          key={card.id}
+                          draggableId={card.id}
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <motion.div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              layout // Animate layout changes (reordering)
+                              initial={{ opacity: 0, height: 0, y: -20 }}
+                              animate={{ opacity: 1, height: "auto", y: 0 }}
+                              exit={{
+                                opacity: 0,
+                                height: 0,
+                                transition: { duration: 0.2 },
+                              }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 30,
+                                duration: 0.3,
+                              }}
+                              className={cn(
+                                snapshot.isDragging ? "shadow-xl" : "shadow-md"
+                              )}
+                            >
+                              <CardEditor
+                                id={card.id}
+                                front={card.front}
+                                back={card.back}
+                                index={index}
+                                isDragging={snapshot.isDragging}
+                                dragHandleProps={
+                                  provided.dragHandleProps || undefined
+                                }
+                                onRemove={handleRemoveCard}
+                                onChange={handleCardChange}
+                                // Removed {...provided.draggableProps} and ref={provided.innerRef} as they are now on motion.div
+                              />
+                            </motion.div>
+                          )}
+                        </Draggable>
+                      ))}
+                    </AnimatePresence>
                     {provided.placeholder}
                   </div>
                 )}
