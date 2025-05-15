@@ -652,7 +652,7 @@ export default function EditDeckClient({ deckId }: Props) {
                         "bg-[var(--neutral-100)] rounded-lg p-4"
                     )}
                   >
-                    <AnimatePresence initial={false}>
+                    <AnimatePresence initial={false} mode="popLayout">
                       {cards.map((card, index) => (
                         <Draggable
                           key={card.id}
@@ -664,7 +664,7 @@ export default function EditDeckClient({ deckId }: Props) {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               layout // Animate layout changes (reordering)
-                              initial={{ opacity: 0, height: 0, y: -20 }}
+                              initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto", y: 0 }}
                               exit={{
                                 opacity: 0,
@@ -672,10 +672,8 @@ export default function EditDeckClient({ deckId }: Props) {
                                 transition: { duration: 0.2 },
                               }}
                               transition={{
-                                type: "spring",
-                                stiffness: 300,
-                                damping: 30,
-                                duration: 0.3,
+                                ease: "easeOut",
+                                duration: 0.5,
                               }}
                               className={cn(
                                 snapshot.isDragging ? "shadow-xl" : "shadow-md"
